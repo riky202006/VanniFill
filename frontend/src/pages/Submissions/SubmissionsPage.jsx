@@ -212,3 +212,4 @@ export default function SubmissionsPage({ onNavigateToHome }) {
     </div>
   )
 }
+

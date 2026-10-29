@@ -66,17 +66,39 @@ router.post('/extract', async (req, res, next) => {
     const follow_up_question = validated.nextQuestion ? validated.nextQuestion.text : null
     const isHindi = String(language).toLowerCase().startsWith('hi')
 
+    // Count newly extracted non-empty fields that are different from prior context
+    const newlyExtractedCount = Object.keys(rawExtracted || {}).filter((k) => {
+      const v = rawExtracted[k]
+      return v !== null && v !== undefined && String(v).trim() !== '' && v !== contextValues[k]
+    }).length
+
     let reply = ''
-    if (validated.isComplete) {
-      reply = isHindi
-        ? 'बहुत बढ़िया! आपके सभी आवश्यक विवरण सफलतापूर्वक भर दिए गए हैं।'
-        : 'All required fields have been successfully extracted and verified.'
-    } else if (follow_up_question) {
-      reply = isHindi
-        ? `मैंने आपकी जानकारी दर्ज कर ली है। ${follow_up_question}`
-        : `I recorded your details. ${follow_up_question}`
+    if (newlyExtractedCount > 0) {
+      if (validated.isComplete) {
+        reply = isHindi
+          ? 'बहुत बढ़िया! आपके सभी आवश्यक विवरण सफलतापूर्वक भर दिए गए हैं।'
+          : 'All required fields have been successfully extracted and verified.'
+      } else if (follow_up_question) {
+        reply = isHindi
+          ? `मैंने आपके विवरण दर्ज कर लिए हैं। ${follow_up_question}`
+          : `I recorded your details. ${follow_up_question}`
+      } else {
+        reply = isHindi ? 'जानकारी दर्ज कर ली गई है।' : 'Form fields have been updated.'
+      }
     } else {
-      reply = isHindi ? 'जानकारी दर्ज कर ली गई है।' : 'Form fields have been updated.'
+      if (transcript.trim().length <= 3) {
+        reply = isHindi
+          ? `नमस्ते! आप फॉर्म भरने के लिए अपने विवरण बोल सकते हैं या लिख सकते हैं। ${follow_up_question || ''}`.trim()
+          : `Hello! You can dictate any field value (e.g. "My name is...") or ask a question. ${follow_up_question || ''}`.trim()
+      } else if (follow_up_question) {
+        reply = isHindi
+          ? `मुझे इस संदेश में कोई नया फॉर्म विवरण नहीं मिला। ${follow_up_question}`
+          : `I didn't detect any form values in that. ${follow_up_question}`
+      } else {
+        reply = isHindi
+          ? 'मुझे कोई नया विवरण नहीं मिला। कृपया अपने विवरण बोलें या प्रश्न पूछें।'
+          : "I didn't detect any new form details in that statement. Please dictate a value or ask a question."
+      }
     }
 
     res.status(200).json({

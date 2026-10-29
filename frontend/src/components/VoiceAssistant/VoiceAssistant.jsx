@@ -128,7 +128,7 @@ export default function VoiceAssistant({
       })
 
       const extractedEntries = Object.entries(apiRes.values || {}).filter(
-        ([, v]) => v !== null && v !== undefined && String(v).trim() !== ''
+        ([k, v]) => v !== null && v !== undefined && String(v).trim() !== '' && v !== fieldValues[k]
       )
 
       if (extractedEntries.length > 0) {
