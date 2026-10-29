@@ -34,3 +34,4 @@ export async function connectDB() {
 export function isMongoConnected() {
   return isConnected && mongoose.connection.readyState === 1
 }
+
