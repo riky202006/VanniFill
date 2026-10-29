@@ -20,7 +20,7 @@
     "ocr",
     "form-automation"
   ],
-  "author": "VaaniFill Team",
+  "author": "Ctrl Freaks",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

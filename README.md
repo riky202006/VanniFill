@@ -2,6 +2,7 @@
 ### *Speak naturally. Fill forms confidently.*
 
 [![Hackathon](https://img.shields.io/badge/ECCLESIA_4.0-PS_ECCLISIA26--001-blueviolet?style=for-the-badge)](https://github.com/riky202006/VanniFill)
+[![Team](https://img.shields.io/badge/Team-Ctrl_Freaks-ff4757?style=for-the-badge)](https://github.com/riky202006/VanniFill)
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B%20%7C%20v20%2B-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 [![AI Engine](https://img.shields.io/badge/Gemini-2.5_Flash-orange?style=for-the-badge&logo=google)](https://aistudio.google.com/)
 [![Frontend](https://img.shields.io/badge/React_19-Vite_%2B_Tailwind-61DAFB?style=for-the-badge&logo=react)](https://vitejs.dev/)
@@ -90,7 +91,7 @@ The system extracts structured data, executes **deterministic format validation*
 
 ---
 
-## 👥 Hackathon Team Ownership Matrix
+## 👥 Hackathon Team Ownership Matrix — Team Ctrl Freaks
 
 | Squad Member | Hackathon Role | Primary Focus & Directories | Core Deliverables |
 |---|---|---|---|
@@ -278,5 +279,6 @@ Every tool and service powering VaaniFill AI operates on completely free tiers:
 
 ## 📄 License & Attribution
 
-Developed with pride by the **VaaniFill Team** for **ECCLESIA 4.0 (Problem Statement: PS ECCLISIA26-001)**.  
+Developed with pride by **Ctrl Freaks** for **ECCLESIA 4.0 (Problem Statement: PS ECCLISIA26-001)**.  
 Licensed under the ISC License.
+
