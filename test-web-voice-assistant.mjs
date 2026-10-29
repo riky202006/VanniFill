@@ -16,6 +16,10 @@ import {
   resolveSelectOption,
   detectSkipIntent,
   detectCorrectionIntent,
+  categorizeField,
+  analyzeForm,
+  createConversationPlan,
+  validateLocally,
 } from './frontend/src/services/voiceEngine.js'
 import { processAssistantQuery } from './frontend/src/services/formAssistantService.js'
 import textToSpeechService from './frontend/src/services/textToSpeechService.js'
@@ -208,6 +212,71 @@ async function runTestSuite() {
   )
   assert(hiSpeechText.length > 10, 'Generates speech text for Hindi read-aloud')
   assert(hiSpeechText.includes('Mobile Number') || hiSpeechText.includes('मोबाइल'), 'Includes field name in narration')
+
+  // =========================================================================
+  // 6. JARVIS AUTONOMOUS CONVERSATIONAL ENGINE & PROGRESSIVE FILLING
+  // =========================================================================
+  console.log('\n⚡ --- 6. Jarvis Autonomous Engine & Progressive Filling ---')
+
+  // A. Semantic Categorization
+  assert(categorizeField(testFields[0]) === 'identity', 'Categorized fullName as identity')
+  assert(categorizeField(testFields[1]) === 'contact', 'Categorized mobile as contact')
+  assert(categorizeField(testFields[3]) === 'location', 'Categorized city as location')
+  assert(categorizeField({ id: 'pwd', label: 'Password', type: 'password' }) === 'sensitive', 'Categorized password as sensitive')
+
+  // B. Form Semantic Analysis
+  const initialValues = { email: 'user@example.com' } // email filled, required empty
+  const formAnalysis = analyzeForm(testFields, initialValues)
+  assert(formAnalysis.totalFields === 8, 'Analyzed all 8 fields')
+  assert(formAnalysis.existingFilledCount === 1, 'Accurately detected 1 existing filled field')
+  assert(formAnalysis.fieldModels.find((f) => f.id === 'fullName').valueStatus === 'empty', 'Empty field marked as empty (never falsely marked filled)')
+  assert(formAnalysis.fieldModels.find((f) => f.id === 'fullName').requiredness === 'required', 'Required field marked as required')
+
+  // C. Natural Bundling Plan (Turn 1: Identity + Contact)
+  const planTurn1 = createConversationPlan(formAnalysis, initialValues, new Set(), 'en-US')
+  assert(planTurn1.targetFields.length === 2, 'Bundled 2 compatible fields into first question')
+  assert(planTurn1.targetFields.includes('fullName') && planTurn1.targetFields.includes('mobile'), 'Bundled Full Name and Mobile Number together')
+  assert(planTurn1.question.includes('Full Name') && planTurn1.question.includes('Mobile Number'), 'Question mentions both bundled fields')
+
+  // D. Turn 1 Answer & Progressive Fill
+  const turn1Utterance = 'My name is Riky Nayak and my phone is 9876543210'
+  const turn1Extracted = extractEntitiesLocally(turn1Utterance, testFields)
+  assert(turn1Extracted.fullName === 'Riky Nayak' && turn1Extracted.mobile === '9876543210', 'Extracted both bundled fields from single natural answer')
+
+  // Progressive live update
+  const currentSessionValues = { ...initialValues, ...turn1Extracted }
+  const valTurn1 = validateLocally(testFields, currentSessionValues)
+  assert(valTurn1.statuses.fullName === 'matched' && valTurn1.statuses.mobile === 'matched', 'Both fields passed validation')
+
+  // E. Turn 2: Next Plan bundles Location fields (City + PIN)
+  const planTurn2 = createConversationPlan(formAnalysis, currentSessionValues, new Set(), 'en-US')
+  assert(planTurn2.targetFields.includes('city') && planTurn2.targetFields.includes('pincode'), 'Turn 2 automatically advanced and bundled City and PIN Code')
+
+  // F. Turn 2 Answer with Spoken Digits PIN
+  const turn2Utterance = 'I live in Guwahati and PIN is zero zero one two three four'
+  const turn2Extracted = extractEntitiesLocally(turn2Utterance, testFields)
+  assert(turn2Extracted.city === 'Guwahati', 'Turn 2 extracted City: "Guwahati"')
+  assert(turn2Extracted.pincode === '001234', 'Turn 2 extracted PIN with leading zeros preserved: "001234"')
+
+  Object.assign(currentSessionValues, turn2Extracted)
+
+  // G. Turn 3: Target Select Field with Options
+  const planTurn3 = createConversationPlan(formAnalysis, currentSessionValues, new Set(), 'en-US')
+  assert(planTurn3.targetFields.includes('gender'), 'Turn 3 targeted Gender dropdown')
+  assert(planTurn3.question.includes('Male, Female, Other'), 'Dropdown question lists available options')
+
+  // User answers using ordinal "the second option"
+  const genderModel = testFields.find((f) => f.id === 'gender')
+  const matchedOpt = resolveSelectOption('the second option', genderModel)
+  assert(matchedOpt === 'Female', 'Resolved "the second option" to "Female"')
+  currentSessionValues.gender = matchedOpt
+
+  // H. Turn 4: Correction Handling
+  const correctionUtterance = 'Actually, change my city to Jaipur'
+  const jarvisCorrection = detectCorrectionIntent(correctionUtterance, testFields)
+  assert(jarvisCorrection && jarvisCorrection.fieldId === 'city' && jarvisCorrection.value === 'Jaipur', 'Detected correction for city to Jaipur')
+  currentSessionValues[jarvisCorrection.fieldId] = jarvisCorrection.value
+  assert(currentSessionValues.city === 'Jaipur', 'City updated in session values to Jaipur')
 
   // Clean up test server
   await new Promise((res) => server.close(res))

@@ -324,11 +324,382 @@ export function extractEntitiesLocally(text, fields = []) {
   return extracted
 }
 
+/**
+ * Classifies the semantic category of a form field from its metadata.
+ */
+export function categorizeField(field) {
+  const type = (field.type || '').toLowerCase()
+  if (['password', 'file', 'hidden'].includes(type)) {
+    return 'sensitive'
+  }
+
+  const text = `${field.id || ''} ${field.name || ''} ${field.label || ''} ${field.placeholder || ''}`.toLowerCase()
+
+  if (/(password|pwd|passwd|cvv|cvc|otp|token|secret)/i.test(text)) {
+    return 'sensitive'
+  }
+  if (
+    /(first.*name|last.*name|full.*name|applicant.*name|candidate.*name|naam|नाम|gender|ling|लिंग|age|umar|उम्र|dob|birth|category|caste)/i.test(
+      text
+    )
+  ) {
+    return 'identity'
+  }
+  if (/(phone|mobile|contact|tel|cell|email|mail|मोबाइल|फोन|ईमेल)/i.test(text)) {
+    return 'contact'
+  }
+  if (
+    /(address|addr|pata|पता|city|sheher|शहर|district|zila|ज़िला|state|rajya|राज्य|pin|pincode|postal|zip|पिन)/i.test(
+      text
+    )
+  ) {
+    return 'location'
+  }
+  if (
+    /(course|degree|education|qualification|university|college|school|roll|marks|percentage|year|पाठ्यक्रम)/i.test(
+      text
+    )
+  ) {
+    return 'education'
+  }
+  return 'details'
+}
+
+/**
+ * Form Field Semantic & Status Analyzer
+ * Analyzes detected fields, classifies valueStatus ('empty' | 'filled')
+ * and requiredness ('required' | 'optional' | 'unknown') independently.
+ */
+export function analyzeForm(detectedFields = [], currentValues = {}) {
+  const sections = {
+    identity: [],
+    contact: [],
+    location: [],
+    education: [],
+    details: [],
+  }
+
+  const fieldModels = []
+  let existingFilledCount = 0
+  let requiredCount = 0
+  let optionalCount = 0
+  let unknownRequiredCount = 0
+
+  detectedFields.forEach((field) => {
+    const category = categorizeField(field)
+    if (category === 'sensitive') return // strictly excluded
+
+    let rawVal = currentValues[field.id]
+    if (rawVal === undefined || rawVal === null) {
+      rawVal = field.currentValue
+    }
+
+    const hasStringValue = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== ''
+    let valueStatus = hasStringValue ? 'filled' : field.valueStatus || 'empty'
+
+    const isFilled = valueStatus === 'filled' && hasStringValue
+    if (isFilled) {
+      existingFilledCount++
+    }
+
+    let requiredness = field.requiredness
+    if (!requiredness) {
+      if (field.required === true) {
+        requiredness = 'required'
+      } else if (field.required === false) {
+        requiredness = 'optional'
+      } else {
+        requiredness = 'unknown'
+      }
+    }
+
+    if (requiredness === 'required') {
+      requiredCount++
+    } else if (requiredness === 'optional') {
+      optionalCount++
+    } else {
+      unknownRequiredCount++
+    }
+
+    const model = {
+      ...field,
+      category,
+      valueStatus: isFilled ? 'filled' : 'empty',
+      requiredness,
+      required: requiredness === 'required',
+      hasExistingValue: isFilled,
+      existingValue: isFilled ? String(rawVal).trim() : null,
+      isPostal: /(pin|pincode|postal|zip|पिन)/i.test(`${field.id} ${field.label || ''}`),
+    }
+
+    fieldModels.push(model)
+    if (sections[category]) {
+      sections[category].push(model)
+    } else {
+      sections.details.push(model)
+    }
+  })
+
+  return {
+    totalFields: fieldModels.length,
+    fieldModels,
+    sections,
+    existingFilledCount,
+    requiredCount,
+    optionalCount,
+    unknownRequiredCount,
+  }
+}
+
+/**
+ * Creates an intelligent, conversational planning step that combines compatible fields
+ * instead of asking rigid single-field questions.
+ */
+export function createConversationPlan(
+  analysis,
+  currentValues = {},
+  skippedFields = new Set(),
+  language = 'en-US'
+) {
+  const isHindi = String(language).toLowerCase().startsWith('hi')
+  const missingRequired = []
+  const missingOptional = []
+
+  const fieldModels = analysis?.fieldModels || analysis || []
+
+  fieldModels.forEach((field) => {
+    if (skippedFields.has(field.id)) return
+    const val = currentValues[field.id]
+    const hasVal = val !== undefined && val !== null && String(val).trim() !== ''
+
+    if (!hasVal) {
+      if (field.requiredness === 'required' || field.required === true) {
+        missingRequired.push(field)
+      } else {
+        missingOptional.push(field)
+      }
+    }
+  })
+
+  // Helper to extract clean human label
+  const getCleanLabel = (f) => {
+    if (!f) return ''
+    const raw = f.label || f.id
+    if (isHindi && raw.includes('/')) {
+      return raw.split('/')[1]?.trim() || raw.split('/')[0]?.trim()
+    }
+    return raw.split('/')[0]?.trim()
+  }
+
+  // If no required fields are missing
+  if (missingRequired.length === 0) {
+    if (missingOptional.length > 0 && !skippedFields.has('__ALL_OPTIONAL__')) {
+      const optLabels = missingOptional.slice(0, 2).map(getCleanLabel).join(', ')
+      return {
+        isComplete: false,
+        readyToFill: true,
+        isOptionalPhase: true,
+        summaryText: isHindi
+          ? `सभी आवश्यक फ़ील्ड भर दिए गए हैं! क्या आप वैकल्पिक विवरण (${optLabels}) भरना चाहते हैं, या 'skip' कहें:`
+          : `All required fields are completed! Would you like to fill optional details (${optLabels}), or say 'skip' to finish:`,
+        targetFields: missingOptional.map((f) => f.id),
+        targetModels: missingOptional,
+        question: isHindi
+          ? `क्या आप ${optLabels} भरना चाहते हैं, या छोड़ें?`
+          : `Would you like to provide ${optLabels}, or skip?`,
+      }
+    }
+
+    return {
+      isComplete: true,
+      readyToFill: true,
+      summaryText: isHindi
+        ? 'शानदार! सभी आवश्यक फ़ील्ड सफलतापूर्वक भर दिए गए हैं। कृपया अपने फ़ॉर्म की समीक्षा करें।'
+        : "All set! I've progressively filled the available fields on your form. Please review and proceed when ready.",
+      targetFields: [],
+      question: null,
+    }
+  }
+
+  // Natural Field Bundling
+  const identityMissing = missingRequired.filter((f) => f.category === 'identity')
+  const contactMissing = missingRequired.filter((f) => f.category === 'contact')
+  const locationMissing = missingRequired.filter((f) => f.category === 'location')
+
+  let bundled = []
+  let questionText = ''
+
+  if (identityMissing.length > 0 && contactMissing.length > 0) {
+    bundled = [identityMissing[0], contactMissing[0]]
+    const l1 = getCleanLabel(bundled[0])
+    const l2 = getCleanLabel(bundled[1])
+    questionText = isHindi
+      ? `शुरू करते हैं! कृपया अपना ${l1} और ${l2} बताएं:`
+      : `Let's get this form filled out. What's your ${l1} and ${l2}?`
+  } else if (locationMissing.length >= 2) {
+    bundled = [locationMissing[0], locationMissing[1]]
+    const l1 = getCleanLabel(bundled[0])
+    const l2 = getCleanLabel(bundled[1])
+    questionText = isHindi
+      ? `कृपया अपना पता बताएं — ${l1} और ${l2}:`
+      : `I have your address details to complete. What is your ${l1} and ${l2}?`
+  } else {
+    // Single targeted question
+    const target = missingRequired[0]
+    bundled = [target]
+    const l = getCleanLabel(target)
+    if (target.type === 'select' && Array.isArray(target.options) && target.options.length > 0) {
+      const opts = target.options.join(', ')
+      questionText = isHindi
+        ? `कृपया ${l} चुनें (${opts}):`
+        : `Please choose your ${l} (${opts}):`
+    } else {
+      questionText = isHindi
+        ? `कृपया अपना ${l} बताएं:`
+        : `Please provide your ${l}:`
+    }
+  }
+
+  const totalFields = analysis?.totalFields || fieldModels.length
+  const existingFilledCount =
+    analysis?.existingFilledCount || Object.values(currentValues).filter(Boolean).length
+
+  return {
+    isComplete: false,
+    readyToFill: false,
+    summaryText: isHindi
+      ? `मुझे फॉर्म में ${totalFields} फ़ील्ड मिले (${existingFilledCount} पहले से भरे हैं)।`
+      : `I found ${totalFields} fields (${existingFilledCount} already completed).`,
+    targetFields: bundled.map((f) => f.id),
+    targetModels: bundled,
+    question: questionText,
+  }
+}
+
+/**
+ * Deterministic validation engine running client-side with full precision.
+ * Distinguishes between Valid, Invalid, Missing, Uncertain, and Skipped.
+ */
+export function validateLocally(fieldModels = [], values = {}, skippedFields = new Set()) {
+  const errors = {}
+  const statuses = {}
+  let validCount = 0
+  let invalidCount = 0
+  let missingCount = 0
+  let skippedCount = 0
+
+  fieldModels.forEach((field) => {
+    const fieldId = field.id
+    const val = values[fieldId]
+    const isSkipped = skippedFields.has(fieldId) || skippedFields.has('__ALL_OPTIONAL__')
+    const hasValue = val !== undefined && val !== null && String(val).trim() !== ''
+
+    if (isSkipped) {
+      statuses[fieldId] = 'skipped'
+      skippedCount++
+      return
+    }
+
+    if (!hasValue) {
+      if (field.requiredness === 'required' || field.required === true) {
+        statuses[fieldId] = 'missing'
+        missingCount++
+      } else {
+        statuses[fieldId] = 'optional_empty'
+      }
+      return
+    }
+
+    const strVal = String(val).trim()
+
+    // 1. Phone validation
+    if (field.type === 'tel' || /phone|mobile/i.test(`${field.id} ${field.label || ''}`)) {
+      if (!/^[6-9]\d{9}$/.test(strVal)) {
+        errors[fieldId] = `Invalid phone number (${strVal}). Must be 10 digits starting with 6-9.`
+        statuses[fieldId] = 'invalid'
+        invalidCount++
+        return
+      }
+    }
+
+    // 2. Email validation
+    if (field.type === 'email' || /email/i.test(`${field.id} ${field.label || ''}`)) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(strVal)) {
+        errors[fieldId] = `Invalid email address (${strVal}).`
+        statuses[fieldId] = 'invalid'
+        invalidCount++
+        return
+      }
+    }
+
+    // 3. Postal / PIN validation
+    if (field.isPostal || /(pin|pincode|postal|zip)/i.test(`${field.id} ${field.label || ''}`)) {
+      if (!/^[1-9]\d{5}$/.test(strVal)) {
+        errors[fieldId] = `PIN code must be 6 digits starting with 1-9.`
+        statuses[fieldId] = 'invalid'
+        invalidCount++
+        return
+      }
+    }
+
+    // 4. Select options validation
+    if (field.type === 'select' && Array.isArray(field.options) && field.options.length > 0) {
+      const match = field.options.some((opt) => String(opt).toLowerCase() === strVal.toLowerCase())
+      if (!match) {
+        errors[fieldId] = `Please select a valid option from the dropdown.`
+        statuses[fieldId] = 'invalid'
+        invalidCount++
+        return
+      }
+    }
+
+    // Valid
+    statuses[fieldId] = 'matched'
+    validCount++
+  })
+
+  const isComplete = missingCount === 0 && invalidCount === 0
+
+  return {
+    isComplete,
+    statuses,
+    errors,
+    validCount,
+    invalidCount,
+    missingCount,
+    skippedCount,
+  }
+}
+
+/**
+ * Monotonically increasing sequence tracker to prevent stale asynchronous API
+ * responses from overwriting newer user corrections.
+ */
+export class SequenceGuard {
+  constructor() {
+    this.latestRequestId = 0
+  }
+
+  next() {
+    this.latestRequestId += 1
+    return this.latestRequestId
+  }
+
+  isCurrent(requestId) {
+    return requestId === this.latestRequestId
+  }
+}
+
 export default {
   normalizeSpokenDigits,
   resolveSelectOption,
   detectSkipIntent,
   detectCorrectionIntent,
   extractEntitiesLocally,
+  categorizeField,
+  analyzeForm,
+  createConversationPlan,
+  validateLocally,
+  SequenceGuard,
 }
 

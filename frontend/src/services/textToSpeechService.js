@@ -272,6 +272,48 @@ class FormTextToSpeechService {
 
     this.synth.speak(utterance)
   }
+
+  /**
+   * Directly speaks arbitrary speech text (e.g. for Jarvis assistant responses)
+   */
+  speakText(text, language = 'en-US', onStart = null, onEnd = null) {
+    if (!this.isSupported() || !text) {
+      if (onEnd) onEnd()
+      return
+    }
+
+    try {
+      this.synth.cancel()
+    } catch {
+      // ignore
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text)
+    const voice = this.resolveVoice(language)
+    if (voice) {
+      utterance.voice = voice
+    }
+    utterance.lang = language.startsWith('hi') && voice?.lang.startsWith('hi') ? 'hi-IN' : 'en-US'
+    utterance.rate = 1.0
+
+    utterance.onstart = () => {
+      if (onStart) onStart()
+    }
+
+    utterance.onend = () => {
+      if (onEnd) onEnd()
+    }
+
+    utterance.onerror = () => {
+      if (onEnd) onEnd()
+    }
+
+    try {
+      this.synth.speak(utterance)
+    } catch {
+      if (onEnd) onEnd()
+    }
+  }
 }
 
 export const textToSpeechService = new FormTextToSpeechService()

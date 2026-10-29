@@ -108,6 +108,21 @@ export default function DocumentWorkspace({
   // Visual highlight for missing fields
   const [highlightMissing, setHighlightMissing] = useState(false)
 
+  // Temporary visual pulse for fields progressively filled by voice / Jarvis
+  const [recentlyFilledFieldIds, setRecentlyFilledFieldIds] = useState([])
+  const highlightTimerRef = React.useRef(null)
+
+  const handleHighlightRecentlyFilled = (fieldIds = []) => {
+    if (!fieldIds || fieldIds.length === 0) return
+    setRecentlyFilledFieldIds(fieldIds)
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current)
+    }
+    highlightTimerRef.current = setTimeout(() => {
+      setRecentlyFilledFieldIds([])
+    }, 2000)
+  }
+
   // Clean up object URLs when file changes or on unmount
   useEffect(() => {
     return () => {
@@ -510,6 +525,7 @@ export default function DocumentWorkspace({
                 isFixture={isFixtureData}
                 formTitle={documentMetadata?.formTitle}
                 highlightMissing={highlightMissing}
+                recentlyFilledFieldIds={recentlyFilledFieldIds}
               />
 
               {/* Editor Navigation */}
@@ -542,6 +558,8 @@ export default function DocumentWorkspace({
                 onApplyProposedChange={handleFieldValueChange}
                 onNavigateToField={setActiveFieldId}
                 onHighlightMissingFields={setHighlightMissing}
+                onHighlightRecentlyFilled={handleHighlightRecentlyFilled}
+                onProceedToReview={() => setCurrentStage(3)}
               />
             </section>
           </div>

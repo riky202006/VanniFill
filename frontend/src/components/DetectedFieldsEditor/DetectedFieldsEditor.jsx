@@ -40,6 +40,7 @@ export default function DetectedFieldsEditor({
   isFixture: _isFixture = false,
   formTitle = '',
   highlightMissing = false,
+  recentlyFilledFieldIds = [],
 }) {
   // TTS State
   const [ttsState, setTtsState] = useState('idle') // 'idle' | 'playing' | 'paused' | 'stopped'
@@ -419,13 +420,14 @@ export default function DetectedFieldsEditor({
           const isFromProfile = source === 'saved_profile'
           const isReadingAloud = ttsCurrentFieldId === field.id
           const isFieldListening = activeListeningFieldId === field.id
+          const isRecentlyFilled = recentlyFilledFieldIds.includes(field.id)
           const resolvedOptions = resolveFieldOptions(field)
 
           return (
             <div
               key={field.id}
               ref={(el) => (fieldCardsRef.current[field.id] = el)}
-              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''} ${isFromProfile ? 'field-card-profile-matched' : ''} ${isReadingAloud ? 'field-card-reading-aloud' : ''}`}
+              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''} ${isFromProfile ? 'field-card-profile-matched' : ''} ${isReadingAloud ? 'field-card-reading-aloud' : ''} ${isRecentlyFilled ? 'field-card-progressive-filled' : ''}`}
               onClick={() => onFieldFocus(field.id)}
             >
               {/* Field Label & Metadata Bar */}
