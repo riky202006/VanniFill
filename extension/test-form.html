@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VaaniFill AI - Test Form (Scholarship & Citizen Services)</title>
+  <style>
+    :root {
+      --primary: #176B50;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #1E293B;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border);
+    }
+    header {
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    h1 {
+      font-size: 24px;
+      color: var(--primary);
+      margin: 0 0 6px 0;
+    }
+    p.subtitle {
+      margin: 0;
+      color: #64748B;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    .required {
+      color: #DC2626;
+    }
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(23, 107, 80, 0.15);
+    }
+    .btn-submit {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-submit:hover {
+      background-color: #11533e;
+    }
+    .hint-box {
+      background-color: #EBF3EE;
+      border: 1px solid #9DC4B2;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #176B50;
+      line-height: 1.4;
+    }
+    .submission-feedback {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #DCFCE7;
+      color: #15803D;
+      display: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>National Citizen Portal Form</h1>
+      <p class="subtitle">Test form for VaaniFill AI Chrome Extension autofill verification</p>
+    </header>
+
+    <div class="hint-box">
+      🎙️ <strong>Testing with VaaniFill AI:</strong><br>
+      1. Open the VaaniFill side panel by clicking the extension icon in Chrome toolbar.<br>
+      2. Click <strong>"Scan Active Webpage"</strong>.<br>
+      3. Speak or type in Hindi (e.g. <em>"Mera naam Rahul Verma hai, phone 9876543210, email rahul@example.com"</em>).<br>
+      4. Click <strong>"Extract & Verify"</strong> then <strong>"Fill Form"</strong>!
+    </div>
+
+    <form id="citizen-form" onsubmit="event.preventDefault(); document.getElementById('feedback').style.display='block';">
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="fullName">Full Name / पूरा नाम <span class="required">*</span></label>
+        <input type="text" id="fullName" name="fullName" placeholder="Enter your full legal name" required />
+      </div>
+
+      <!-- Mobile Number -->
+      <div class="form-group">
+        <label for="mobile">Mobile Number / मोबाइल नंबर <span class="required">*</span></label>
+        <input type="tel" id="mobile" name="mobile" placeholder="10-digit mobile number" required />
+      </div>
+
+      <!-- Email Address -->
+      <div class="form-group">
+        <label for="email">Email Address / ईमेल <span class="required">*</span></label>
+        <input type="email" id="email" name="email" placeholder="example@domain.com" required />
+      </div>
+
+      <!-- Gender -->
+      <div class="form-group">
+        <label for="gender">Gender / लिंग</label>
+        <select id="gender" name="gender">
+          <option value="">-- Select Gender --</option>
+          <option value="Male">Male / पुरुष</option>
+          <option value="Female">Female / महिला</option>
+          <option value="Other">Other / अन्य</option>
+        </select>
+      </div>
+
+      <!-- City / District -->
+      <div class="form-group">
+        <label for="cityDistrict">City or District / शहर या जिला</label>
+        <input type="text" id="cityDistrict" name="cityDistrict" placeholder="e.g. Bhopal, Jaipur, Delhi" />
+      </div>
+
+      <!-- Postal PIN Code -->
+      <div class="form-group">
+        <label for="pinCode">PIN Code / पिन कोड</label>
+        <input type="text" id="pinCode" name="pinCode" placeholder="6-digit Indian PIN code" />
+      </div>
+
+      <!-- Notes / Address -->
+      <div class="form-group">
+        <label for="notes">Address / Remarks</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Enter residential address details"></textarea>
+      </div>
+
+      <!-- Excluded / Sensitive Controls Test Section -->
+      <div style="margin: 20px 0; padding: 12px; background: #FEF2F2; border: 1px dashed #F87171; border-radius: 8px;">
+        <p style="font-size: 12px; font-weight: 700; color: #991B1B; margin: 0 0 8px 0;">🛡️ Security Audit Fields (VaaniFill AI must strictly ignore these):</p>
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="pwd" style="font-size: 12px;">Account Password (Ignored)</label>
+          <input type="password" id="pwd" name="password" placeholder="Must not be scanned" />
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label for="cardNum" style="font-size: 12px;">Credit Card Number (Ignored)</label>
+          <input type="text" id="cardNum" name="creditcard" autocomplete="cc-number" placeholder="Must not be scanned" />
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="docFile" style="font-size: 12px;">Upload Document (Ignored)</label>
+          <input type="file" id="docFile" name="documentFile" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Submit Form (Manual confirmation only)</button>
+    </form>
+
+    <div id="feedback" class="submission-feedback">
+      ✅ Form submission submitted successfully by user!
+    </div>
+  </div>
+</body>
+</html>
+

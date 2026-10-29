@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VaaniFill AI - Conversational Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="vf-app-container">
+
+    <!-- Header -->
+    <header class="vf-header">
+      <div class="vf-brand">
+        <div class="vf-logo" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" x2="12" y1="19" y2="22"/>
+          </svg>
+        </div>
+        <div class="vf-brand-info">
+          <h1 class="vf-app-title">VaaniFill AI</h1>
+          <span class="vf-app-tagline">वाणीFill • Conversational Assistant</span>
+        </div>
+      </div>
+
+      <div class="vf-header-actions">
+        <!-- Language Selector -->
+        <select id="language-select" class="vf-select-lang" aria-label="Language selection">
+          <option value="hi-IN" selected>🇮🇳 हिन्दी</option>
+          <option value="en-IN">🇮🇳 English</option>
+        </select>
+
+        <!-- Backend Connectivity Dot -->
+        <div id="backend-status-badge" class="vf-status-badge" title="Backend: http://localhost:5000">
+          <span class="vf-status-dot"></span>
+        </div>
+
+        <!-- Reset Session -->
+        <button type="button" id="btn-reset-session" class="vf-btn-icon" title="Reset Session" aria-label="Reset session">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Alert / Recoverable Notice -->
+    <div id="alert-banner" class="vf-alert vf-alert-hidden" role="alert" aria-live="polite">
+      <div class="vf-alert-icon" id="alert-icon">⚠️</div>
+      <div class="vf-alert-body">
+        <div class="vf-alert-title" id="alert-title">Notice</div>
+        <div class="vf-alert-desc" id="alert-message">Actionable guidance.</div>
+      </div>
+      <button type="button" id="alert-close-btn" class="vf-alert-close" aria-label="Close alert">&times;</button>
+    </div>
+
+    <!-- MAIN BODY -->
+    <main class="vf-main-body">
+
+      <!-- VIEW 1: INITIAL STATE (Polished, minimal with ONE primary button) -->
+      <section id="view-initial" class="vf-view-initial">
+        <div class="vf-hero-card">
+          <div class="vf-assistant-avatar-large">
+            <span class="vf-avatar-pulse"></span>
+            🤖
+          </div>
+          <h2 class="vf-greeting-title">Hello! I'm VaaniFill</h2>
+          <p class="vf-greeting-text">
+            I'll help you complete this webpage form naturally. Talk or type to me, and watch fields fill on the page in real time.
+          </p>
+
+          <!-- Form Detection Badge -->
+          <div id="form-status-pill" class="vf-form-badge vf-form-badge-loading">
+            <span class="vf-badge-spinner"></span>
+            <span id="form-status-text">Detecting webpage form...</span>
+          </div>
+
+          <!-- PRIMARY ACTION BUTTON -->
+          <button type="button" id="btn-start-assistant" class="vf-btn-start">
+            <span class="vf-btn-start-icon">⚡</span>
+            <span class="vf-btn-start-label">Start Assistant / शुरू करें</span>
+          </button>
+
+          <p class="vf-start-subtext">
+            Press once to begin conversational filling. No manual steps.
+          </p>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ACTIVE CONVERSATION STATE -->
+      <section id="view-active" class="vf-view-active vf-hidden">
+
+        <!-- Compact Progress Bar Header -->
+        <div class="vf-progress-panel">
+          <div class="vf-progress-meta">
+            <span id="progress-text" class="vf-progress-text">0 of 0 fields completed</span>
+            <button type="button" id="btn-toggle-fields" class="vf-btn-link" title="Toggle field checklist">
+              <span>📋 View Fields</span>
+            </button>
+          </div>
+          <div class="vf-progress-track">
+            <div id="progress-bar-fill" class="vf-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Collapsible Fields Drawer (Optional Inspection) -->
+        <div id="drawer-fields" class="vf-drawer-fields vf-hidden">
+          <div class="vf-drawer-header">
+            <span class="vf-drawer-title">Live Field Checklist</span>
+            <span class="vf-drawer-subtitle">Updates progressively</span>
+          </div>
+          <div id="fields-checklist" class="vf-fields-list">
+            <!-- Dynamically populated field cards -->
+          </div>
+        </div>
+
+        <!-- Conversational Chat Stream -->
+        <div id="chat-stream" class="vf-chat-stream" aria-live="polite">
+          <!-- Dynamic conversation bubbles injected here -->
+        </div>
+
+        <!-- Typing / AI Thinking Indicator -->
+        <div id="assistant-typing" class="vf-typing-indicator vf-hidden">
+          <span class="vf-typing-dot"></span>
+          <span class="vf-typing-dot"></span>
+          <span class="vf-typing-dot"></span>
+          <span class="vf-typing-label">VaaniFill is processing...</span>
+        </div>
+
+        <!-- Assistant Bottom Dock -->
+        <div class="vf-bottom-dock">
+          <!-- Quick Action Chips -->
+          <div class="vf-chips-container">
+            <button type="button" id="chip-skip-optional" class="vf-chip" title="Skip remaining optional fields">
+              ⏩ Skip Optional
+            </button>
+            <button type="button" id="chip-listen-toggle" class="vf-chip" title="Toggle audio read-aloud">
+              🔊 Listen Aloud: <strong id="tts-status-label">Off</strong>
+            </button>
+            <button type="button" id="chip-pause" class="vf-chip vf-chip-danger" title="Stop listening / pause">
+              ⏹️ Stop
+            </button>
+          </div>
+
+          <!-- Input Row -->
+          <div class="vf-input-bar">
+            <!-- Glowing Voice Mic Button -->
+            <button type="button" id="btn-mic-toggle" class="vf-mic-dock-btn" aria-label="Toggle voice input" aria-pressed="false" title="Tap to speak / बोलने के लिए दबाएं">
+              <span class="vf-mic-ripple"></span>
+              <svg class="vf-mic-dock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22"/>
+              </svg>
+            </button>
+
+            <!-- Text Input Fallback -->
+            <input
+              type="text"
+              id="user-text-input"
+              class="vf-chat-input"
+              placeholder="Speak or type answer here..."
+              autocomplete="off"
+            />
+
+            <!-- Send Button -->
+            <button type="button" id="btn-send-message" class="vf-send-btn" aria-label="Send answer" title="Send answer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Mic Status & Real-time Interim Speech Transcript -->
+          <div id="mic-status-bar" class="vf-mic-status-bar vf-hidden">
+            <span class="vf-mic-live-dot"></span>
+            <span id="mic-live-text" class="vf-mic-live-text">Listening... speak naturally</span>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="vf-footer">
+      <span>🔒 Safe Progressive Autofill • No Auto-Submit</span>
+    </footer>
+
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
