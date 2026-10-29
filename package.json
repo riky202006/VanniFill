@@ -9,7 +9,9 @@
     "build:frontend": "npm --prefix frontend run build",
     "preview:frontend": "npm --prefix frontend run preview",
     "dev:backend": "npm --prefix backend run dev",
-    "start:backend": "npm --prefix backend start"
+    "start:backend": "npm --prefix backend start",
+    "test:backend": "npm --prefix backend test",
+    "test": "npm --prefix backend test"
   },
   "keywords": [
     "vaanifill",

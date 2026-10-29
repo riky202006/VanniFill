@@ -184,3 +184,4 @@ export const FORM_SCHEMAS = {
 export function getFormSchema(formId) {
   return FORM_SCHEMAS[formId] || FORM_SCHEMAS.scholarship
 }
+

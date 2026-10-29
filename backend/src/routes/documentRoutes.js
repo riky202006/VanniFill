@@ -68,3 +68,4 @@ router.get('/:docId/status', (req, res) => {
 })
 
 export default router
+
