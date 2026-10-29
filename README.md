@@ -127,7 +127,7 @@ VanniFill/
 │   │   ├── app.js                 # Express application & CORS configuration
 │   │   └── server.js              # Server entry point
 │   ├── test/api.test.js           # 20-case automated unit & integration test suite
-│   ├── .env.example               # Environment template (PORT, MONGODB_URI, GEMINI_API_KEY)
+│   ├── .env                       # Local environment configuration
 │   └── package.json               # Backend dependencies
 │
 ├── frontend/                      # React 19 + Vite + Tailwind Client (Port 5173)
@@ -137,7 +137,7 @@ VanniFill/
 │   │   ├── services/              # API clients and form generation service
 │   │   ├── App.jsx                # Application root
 │   │   └── main.jsx               # Entry point
-│   ├── .env.example               # Frontend environment template
+│   ├── .env                       # Local frontend environment configuration
 │   └── package.json               # Frontend dependencies
 │
 ├── extension/                     # Google Chrome Extension (Manifest V3)
@@ -177,8 +177,8 @@ npm --prefix frontend install
 ```
 
 Configure environment files:
-- In `backend/`: create `.env` based on `.env.example` with your `GEMINI_API_KEY` and optional `MONGODB_URI`.
-- In `frontend/`: create `.env` based on `.env.example`.
+- In `backend/`: configure `.env` with your `GEMINI_API_KEY` and optional `MONGODB_URI`.
+- In `frontend/`: configure `.env` (e.g. `VITE_API_URL=http://localhost:5000`).
 
 ---
 
@@ -265,7 +265,7 @@ If a teammate pulls the repository and encounters connection issues, network err
 * **The Cause**: `.env` files are git-ignored for credential safety.
 * **The Result**: When teammates clone or pull, `backend/.env` is missing or contains placeholder values.
 * **How to Fix**:
-  Copy `backend/.env.example` to `backend/.env` and supply working values:
+  Create or check `backend/.env` and supply working values:
   - `MONGODB_URI` connection string
   - `JWT_SECRET`
   - `GEMINI_API_KEY`
