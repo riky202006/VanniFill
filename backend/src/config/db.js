@@ -25,7 +25,9 @@ export async function connectDB() {
     console.log(`✅ [Database] MongoDB Atlas Connected: ${conn.connection.host}`)
     return true
   } catch (err) {
-    console.warn(`⚠️  [Database] Could not connect to MongoDB Atlas (${err.message}). Falling back to in-memory mode.`)
+    console.warn(`⚠️  [Database] Could not connect to MongoDB Atlas: ${err.message}`)
+    console.warn('💡 [Database Tip] If connecting from a new network or collaborating with teammates, verify cloud.mongodb.com -> Network Access has 0.0.0.0/0 (Allow access from anywhere).')
+    console.warn('⚡ [Database] Running with zero-latency in-memory datastore fallback.')
     isConnected = false
     return false
   }

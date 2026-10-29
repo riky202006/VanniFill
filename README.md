@@ -235,6 +235,62 @@ Open **`http://localhost:5173`** in your browser to interact with the web interf
 
 ---
 
+## 🛠️ Teammate Troubleshooting & Common Connection Issues
+
+If a teammate pulls the repository and encounters connection issues, network errors, or failed API calls, check these 4 common items:
+
+### 1. MongoDB Atlas IP Whitelist (Most Likely!)
+* **The Cause**: When MongoDB Atlas was initially created, choosing "Add My Current IP Address" restricts database access strictly to that single IP/network. When teammates attempt to connect from other locations, MongoDB Atlas blocks their IP address.
+* **How to Fix**:
+  1. Open [cloud.mongodb.com](https://cloud.mongodb.com).
+  2. In the left navigation, click **Network Access** (under *SECURITY*).
+  3. Inspect the IP Access List: if `0.0.0.0/0` is not listed, click **"Add IP Address"**.
+  4. Select **"Allow Access from Anywhere"** (`0.0.0.0/0`) and click **Confirm**.
+  5. It takes ~30 seconds to deploy. Once active, all teammates can connect without IP restrictions!
+  > **Note**: Even if Atlas is offline or blocked, VaaniFill features an automatic in-memory datastore fallback that allows the app to function locally.
+
+---
+
+### 2. Missing `backend/.env` on Their Machine
+* **The Cause**: `.env` files are git-ignored for credential safety.
+* **The Result**: When teammates clone or pull, `backend/.env` is missing or contains placeholder values.
+* **How to Fix**:
+  Copy `backend/.env.example` to `backend/.env` and supply working values:
+  - `MONGODB_URI` connection string
+  - `JWT_SECRET`
+  - `GEMINI_API_KEY`
+
+---
+
+### 3. Backend Server Isn't Running on Port 5000
+* **The Cause**: Only the frontend (`localhost:5173`) was started, without starting the Express backend on port 5000.
+* **The Result**: Browser requests to `http://localhost:5000/api/*` return `Failed to fetch` or `ERR_CONNECTION_REFUSED`.
+* **How to Fix**:
+  Run the backend server in a separate terminal:
+  ```bash
+  npm run dev:backend
+  ```
+  *(Or from the `backend/` folder: `npm run dev`)*
+
+---
+
+### 4. Missing Dependencies (`npm install`)
+* **The Cause**: New packages (such as `mongoose`) were recently added. If a teammate pulls git changes without running `npm install`, the server crashes on startup with `Cannot find module 'mongoose'`.
+* **How to Fix**:
+  Inside the `backend/` directory, install all required dependencies:
+  ```bash
+  npm install
+  ```
+
+---
+
+### 💡 Quick Diagnostic:
+Open this URL directly in the browser: **`http://localhost:5000/api/health`**
+- If it loads and shows `"status": "ok"`, the backend server is running properly.
+- If it says *"This site can’t be reached"*, the backend server is either stopped or crashed during boot.
+
+---
+
 ## 📡 Live API Testing (For Hackathon Judges)
 
 You can test live extraction and validation endpoints directly from your terminal using PowerShell or `curl`:
