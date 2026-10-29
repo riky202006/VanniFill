@@ -1,10 +1,10 @@
 /**
  * Dual AI Extraction Service for VaaniFill AI
  * Combines Groq Ultra-Fast LPU Inference (~300ms) for Speech & Logic
- * with Google Gemini 2.5 Flash for Multimodal Vision Document OCR.
+ * with Google Gemini 3.5 Flash for Multimodal Vision Document OCR.
  *
  * Tier 1: Groq (300ms ultra-low latency speech extraction)
- * Tier 2: Gemini 2.5 Flash (Vision OCR & multimodal fallback)
+ * Tier 2: Gemini 3.5 Flash (Vision OCR & multimodal fallback)
  * Tier 3: Deterministic Heuristic Regex (100% offline fallback)
  */
 
@@ -23,6 +23,35 @@ let genAI = null
 if (isRealApiKey) {
   genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 }
+
+const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite']
+
+async function generateWithGemini(contents, timeoutMs = 8000) {
+  if (!genAI) return null
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+        },
+      })
+      const generatePromise = model.generateContent(contents)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout on ${modelName}`)), timeoutMs)
+      )
+      const response = await Promise.race([generatePromise, timeoutPromise])
+      const text = response.response.text()
+      const parsed = JSON.parse(text)
+      return { parsed, modelName }
+    } catch (err) {
+      console.warn(`[GeminiService] ${modelName} notice: ${err.message.slice(0, 100)}`)
+    }
+  }
+  return null
+}
+
 
 /**
  * Deterministic offline fallback extractor for testing without live API quota
@@ -146,7 +175,7 @@ CRITICAL ZERO-HALLUCINATION RULES:
 
 /**
  * Multilingual Speech Extraction Engine
- * Tries Groq (Tier 1) -> Gemini 2.5 Flash (Tier 2) -> Heuristics (Tier 3)
+ * Tries Groq (Tier 1) -> Gemini 3.5 Flash (Tier 2) -> Heuristics (Tier 3)
  */
 export async function extractFromTranscript(transcript, fieldsDef, currentFields = {}) {
   // Tier 1: Try Ultra-Fast Groq Inference (< 400ms)
@@ -156,7 +185,7 @@ export async function extractFromTranscript(transcript, fieldsDef, currentFields
     return { ...currentFields, ...groqResult }
   }
 
-  // Tier 2: Try Gemini 2.5 Flash
+  // Tier 2: Try Gemini 3.5 Flash
   if (genAI) {
     const prompt = `
 You are the Multilingual Form Extraction Engine for VAANIFILL AI.
@@ -175,22 +204,10 @@ Example:
 { "fullName": "...", "mobile": "..." }
 `
 
-    try {
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-        },
-      })
-
-      const response = await model.generateContent(prompt)
-      const jsonText = response.response.text()
-      const parsed = JSON.parse(jsonText)
-      console.log('✨ [AI Engine] Extracted via Gemini 2.5 Flash')
-      return { ...currentFields, ...parsed }
-    } catch (err) {
-      console.warn('[GeminiService] Live API unavailable, falling back to heuristics:', err.message)
+    const geminiRes = await generateWithGemini(prompt, 6000)
+    if (geminiRes?.parsed) {
+      console.log(`✨ [AI Engine] Extracted via ${geminiRes.modelName}`)
+      return { ...currentFields, ...geminiRes.parsed }
     }
   }
 
@@ -202,7 +219,7 @@ Example:
 /**
  * Universal Zero-Shot Multi-Modal Document OCR Extraction
  * Handles ANY arbitrary form: PDF, PNG, JPG, JPEG, WEBP.
- * Uses Gemini 2.5 Flash Vision with automatic 8-second circuit breaker.
+ * Uses Gemini 3.5 Flash Vision with automatic 8-second circuit breaker.
  */
 export async function extractFromDocument(buffer, mimeType, fileName = '') {
   const cleanName = String(fileName || 'document.pdf').replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
@@ -258,14 +275,6 @@ export async function extractFromDocument(buffer, mimeType, fileName = '') {
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-      },
-    })
-
     const prompt = `
 You are the Universal Form Detection and Layout Engine for VAANIFILL AI.
 Analyze this uploaded document/form image or PDF. It can be ANY form from any institution (government scheme, medical intake, passport, driving license, bank application, tax form, admission, or utility bill).
@@ -324,22 +333,25 @@ Return valid JSON conforming to this schema:
       },
     }
 
-    // 8-second timeout race to prevent UI hang
-    const generatePromise = model.generateContent([prompt, part])
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('OCR Vision timeout (exceeded 8s)')), 8000)
-    )
-
-    const response = await Promise.race([generatePromise, timeoutPromise])
-    const parsed = JSON.parse(response.response.text())
+    const geminiRes = await generateWithGemini([prompt, part], 8000)
+    if (geminiRes?.parsed) {
+      const parsed = geminiRes.parsed
+      console.log(`✨ [AI Engine] Document parsed via ${geminiRes.modelName}`)
+      return {
+        formTitle: parsed.formTitle || fallbackTitle,
+        formDescription: parsed.formDescription || fallbackDescription,
+        pageCount: parsed.pageCount || 1,
+        detectedFields: parsed.detectedFields && parsed.detectedFields.length > 0
+          ? parsed.detectedFields
+          : defaultFields,
+      }
+    }
 
     return {
-      formTitle: parsed.formTitle || fallbackTitle,
-      formDescription: parsed.formDescription || fallbackDescription,
-      pageCount: parsed.pageCount || 1,
-      detectedFields: parsed.detectedFields && parsed.detectedFields.length > 0
-        ? parsed.detectedFields
-        : defaultFields,
+      formTitle: fallbackTitle,
+      formDescription: fallbackDescription,
+      pageCount: 1,
+      detectedFields: defaultFields,
     }
   } catch (err) {
     console.warn('[GeminiService] Vision OCR notice:', err.message)
