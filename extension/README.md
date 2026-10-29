@@ -1,17 +1,17 @@
 # VaaniFill AI - Chrome Extension (Manifest V3)
 
-This extension allows users to autofill digital forms directly on third-party websites using their VaaniFill verified profiles.
+Autonomous, browser-level form field detection and DOM injection companion for VaaniFill AI. Allows citizens to speak in Hindi, English, or Hinglish to autofill forms on third-party civic, education, and healthcare portals.
 
-## Team Ownership: Member 3
+## Technical Architecture
 
-- **Background worker**: `src/background/service-worker.js`
-- **Content script**: `src/content/content-script.js` (detects DOM input fields, injects values)
-- **Popup UI**: `src/popup/`
+- **Background Service Worker**: `src/background/service-worker.js` (Manifest V3 lifecycle & message router)
+- **Content Script**: `src/content/content-script.js` (DOM input field detection, schema mapping, and synthetic event injection)
+- **Popup Interface**: `src/popup/` (User controls, real-time voice feedback, and profile selector)
 
-## How to Test in Chrome
+## Installation & Testing in Chrome
 
 1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Toggle **Developer mode** in the top right corner.
+2. Enable **Developer mode** via the toggle in the top-right corner.
 3. Click **Load unpacked**.
-4. Select the `extension/` folder from this repository.
-5. The VaaniFill extension icon will appear in your Chrome toolbar.
+4. Select this `extension/` directory.
+5. The VaaniFill extension icon will appear in your Chrome toolbar, ready for live in-page injection.

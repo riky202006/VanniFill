@@ -1,13 +1,13 @@
 # VaaniFill AI - Hackathon Team Workflow Guide
 
-## Team Roles & Ownership Matrix
+## Team Roles & Ownership Matrix (Team Ctrl Freaks)
 
 | Member | Primary Focus | Primary Directory | Core Responsibilities |
 |---|---|---|---|
-| **Member 1** | Frontend & Guest Workflow | `frontend/src/pages/`, `frontend/src/components/`, `frontend/src/hooks/` | Welcome page, Guest mode, voice wizard UI, review form |
-| **Member 2** | Backend & AI | `backend/src/` | Express REST API, Gemini API, OCR pipeline |
-| **Member 3** | Chrome Extension | `extension/` | Manifest V3 background worker, content script form autofilling |
-| **Member 4** | Docs, Testing & QA | `docs/`, `shared/documentation/` | API validation, testing guide, architecture diagrams, demo deck |
+| **Riky Nayak** | Frontend Lead | `frontend/src/pages/`, `frontend/src/components/` | Workspace UI, responsive styling, accessibility, state orchestration |
+| **Devansh Dausodia** | Backend & AI Lead | `backend/src/` | Express REST APIs, Gemini 2.5 Flash OCR, MongoDB Atlas integration, deterministic validation |
+| **Jibtesh Kalita** | Extension & Field Mapping Lead | `extension/` | Manifest V3 service worker, content script DOM injection, form mapping |
+| **Dhairya Choudhary** | QA, Testing & Pitch Lead | `backend/test/`, `shared/` | Automated test suite (20/20 passing), API specifications, live presentation |
 
 ## Branching & Commit Conventions
 
@@ -20,6 +20,6 @@
 
 ## Coordination Rules
 
-1. **Follow the API Contract**: Refer to `docs/api-contract.md` before implementing or altering endpoints.
-2. **No Hardcoded Secrets**: Always use `.env` files locally and `.env.example` templates in source control.
-3. **Independent Sub-Apps**: Frontend, Backend, and Extension are decoupled; changes in one should not break local startup of another.
+1. **Follow the API Contract**: Refer to `shared/api-contracts/form-api.json` before altering endpoints.
+2. **No Hardcoded Secrets**: Always use `.env` locally; secrets are protected by `.gitignore`.
+3. **Decoupled Architecture**: Frontend, Backend, and Extension operate as independent modular layers.
