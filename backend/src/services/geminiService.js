@@ -9,9 +9,9 @@ import { FORM_SCHEMAS, getFormSchema } from '../data/formSchemas.js'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
 const isRealApiKey = GEMINI_API_KEY && 
-  GEMINI_API_KEY.startsWith('AIza') && 
+  (GEMINI_API_KEY.startsWith('AIza') || GEMINI_API_KEY.startsWith('AQ.')) && 
   !GEMINI_API_KEY.includes('placeholder') && 
-  GEMINI_API_KEY.length > 25
+  GEMINI_API_KEY.length > 20
 
 let genAI = null
 if (isRealApiKey) {
