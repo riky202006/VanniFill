@@ -8,6 +8,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  User,
+  LogOut,
 } from 'lucide-react'
 import DocumentUploader from '../../components/DocumentUploader/DocumentUploader'
 import OriginalDocumentPreview from '../../components/OriginalDocumentPreview/OriginalDocumentPreview'
@@ -16,10 +18,21 @@ import DetectedFieldsEditor from '../../components/DetectedFieldsEditor/Detected
 import VoiceAssistant from '../../components/VoiceAssistant/VoiceAssistant'
 import FormReview from '../../components/FormReview/FormReview'
 import DownloadPanel from '../../components/DownloadPanel/DownloadPanel'
+import AuthModal from '../../components/AuthModal/AuthModal'
 import { analyzeDocument, FIXTURES } from '../../services/documentAnalysisService'
 import './GuestWorkspace.css'
 
 export default function GuestWorkspace({ onNavigateHome }) {
+  // Authentication & Citizen Profile State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vaanifill_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
   // Workflow Stages: 1 = Upload, 2 = Fill & Edit, 3 = Review, 4 = Download
   const [currentStage, setCurrentStage] = useState(1)
 
@@ -49,7 +62,7 @@ export default function GuestWorkspace({ onNavigateHome }) {
   // Visual highlight for missing fields
   const [highlightMissing, setHighlightMissing] = useState(false)
 
-  // Auth Modal State (Placeholder)
+  // Auth Modal State
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'signin' })
 
   // Clean up object URLs when file changes or on unmount
@@ -200,6 +213,41 @@ export default function GuestWorkspace({ onNavigateHome }) {
     })
   }
 
+  // 1-Click Profile Autofill for Logged-In Citizens
+  const handleAutofillProfile = () => {
+    if (!currentUser?.profile) return
+    const profile = currentUser.profile
+
+    detectedFields.forEach((field) => {
+      const key = (field.id || '').toLowerCase()
+      let matchedVal = null
+
+      if (key.includes('name') || key.includes('applicant') || key.includes('patient')) {
+        matchedVal = profile.fullName
+      } else if (key.includes('phone') || key.includes('mobile') || key.includes('contact')) {
+        matchedVal = profile.mobile
+      } else if (key.includes('email')) {
+        matchedVal = profile.email
+      } else if (key.includes('dob') || key.includes('birth')) {
+        matchedVal = profile.dob
+      } else if (key.includes('gender')) {
+        matchedVal = profile.gender
+      } else if (key.includes('category')) {
+        matchedVal = profile.category
+      } else if (key.includes('state')) {
+        matchedVal = profile.state
+      } else if (key.includes('pin') || key.includes('postal')) {
+        matchedVal = profile.postalCode
+      } else if (key.includes('income')) {
+        matchedVal = profile.annualIncome
+      }
+
+      if (matchedVal) {
+        handleFieldValueChange(field.id, matchedVal)
+      }
+    })
+  }
+
   // --------------------------------------------------------------------------
   // Reset Flow
   // --------------------------------------------------------------------------
@@ -214,6 +262,12 @@ export default function GuestWorkspace({ onNavigateHome }) {
     setIsFixtureData(false)
     setActiveFieldId(null)
     setCurrentStage(1)
+  }
+
+  const handleSignOut = () => {
+    localStorage.removeItem('vaanifill_token')
+    localStorage.removeItem('vaanifill_user')
+    setCurrentUser(null)
   }
 
   const activeField = detectedFields.find((f) => f.id === activeFieldId)
@@ -241,24 +295,44 @@ export default function GuestWorkspace({ onNavigateHome }) {
           <div className="navbar-actions">
             <div className="guest-badge" title="No account required for filling">
               <span className="guest-badge-dot" aria-hidden="true" />
-              <span>Guest Workspace</span>
+              <span>{currentUser ? 'Citizen Account' : 'Guest Workspace'}</span>
             </div>
 
-            <button
-              type="button"
-              className="nav-auth-btn nav-signin-btn"
-              onClick={() => setAuthModal({ isOpen: true, mode: 'signin' })}
-            >
-              Sign In
-            </button>
+            {currentUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="auth-user-badge">
+                  <User className="auth-user-icon" />
+                  <span>{currentUser.name}</span>
+                </div>
+                <button
+                  type="button"
+                  className="auth-logout-btn"
+                  onClick={handleSignOut}
+                  title="Sign out of account"
+                >
+                  <LogOut style={{ width: '12px', height: '12px', display: 'inline', marginRight: '4px' }} />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="nav-auth-btn nav-signin-btn"
+                  onClick={() => setAuthModal({ isOpen: true, mode: 'signin' })}
+                >
+                  Sign In
+                </button>
 
-            <button
-              type="button"
-              className="nav-auth-btn nav-signup-btn"
-              onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
-            >
-              Sign Up
-            </button>
+                <button
+                  type="button"
+                  className="nav-auth-btn nav-signup-btn"
+                  onClick={() => setAuthModal({ isOpen: true, mode: 'signup' })}
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -273,110 +347,83 @@ export default function GuestWorkspace({ onNavigateHome }) {
             <ShieldCheck className="intro-badge-icon" aria-hidden="true" />
             <span>Document-Driven Form Completion</span>
           </div>
-
-          <h1 className="intro-heading">
-            {currentStage === 1
-              ? "Let's complete your form."
-              : currentStage === 2
-              ? `Fill ${documentMetadata?.formTitle || 'Your Form'}`
-              : currentStage === 3
-              ? 'Review Detected Information'
-              : 'Export Your Completed Form'}
+          <h1 className="workspace-title">
+            {currentStage === 1 && "Let's complete your form."}
+            {currentStage === 2 && `Fill ${documentMetadata?.formTitle || 'Your Form'}`}
+            {currentStage === 3 && 'Review & Confirm Your Form'}
+            {currentStage === 4 && 'Export Your Completed Form'}
           </h1>
-
-          <p className="intro-subtext">
-            {currentStage === 1
-              ? 'Upload any PDF or image form. VaaniFill derives fields directly from your document.'
-              : 'Original document preview and contextual multilingual voice assistant stay by your side.'}
+          <p className="workspace-subtitle">
+            {currentStage === 1 && 'Upload any PDF or image form. VaaniFill derives fields directly from your document.'}
+            {currentStage === 2 && 'Original document preview and contextual multilingual voice assistant stay by your side.'}
+            {currentStage === 3 && 'Verify detected document fields against your voice answers before final generation.'}
+            {currentStage === 4 && 'Original document preview and contextual multilingual voice assistant stay by your side.'}
           </p>
-
-          {/* Stepper Indicator */}
-          <nav className="step-stepper" aria-label="Form Stages">
-            <button
-              type="button"
-              className={`step-item ${currentStage === 1 ? 'step-active' : currentStage > 1 ? 'step-completed' : ''}`}
-              onClick={() => currentStage > 1 && setCurrentStage(1)}
-              disabled={isProcessing}
-            >
-              <span className="step-number">{currentStage > 1 ? <Check className="step-check" /> : '1'}</span>
-              <span className="step-label">Upload Form</span>
-            </button>
-
-            <span className="step-connector" aria-hidden="true" />
-
-            <button
-              type="button"
-              className={`step-item ${currentStage === 2 ? 'step-active' : currentStage > 2 ? 'step-completed' : ''}`}
-              onClick={() => detectedFields.length > 0 && setCurrentStage(2)}
-              disabled={detectedFields.length === 0 || isProcessing}
-            >
-              <span className="step-number">{currentStage > 2 ? <Check className="step-check" /> : '2'}</span>
-              <span className="step-label">Fill & Edit</span>
-            </button>
-
-            <span className="step-connector" aria-hidden="true" />
-
-            <button
-              type="button"
-              className={`step-item ${currentStage === 3 ? 'step-active' : currentStage > 3 ? 'step-completed' : ''}`}
-              onClick={() => detectedFields.length > 0 && setCurrentStage(3)}
-              disabled={detectedFields.length === 0 || isProcessing}
-            >
-              <span className="step-number">{currentStage > 3 ? <Check className="step-check" /> : '3'}</span>
-              <span className="step-label">Review</span>
-            </button>
-
-            <span className="step-connector" aria-hidden="true" />
-
-            <button
-              type="button"
-              className={`step-item ${currentStage === 4 ? 'step-active' : ''}`}
-              onClick={() => detectedFields.length > 0 && setCurrentStage(4)}
-              disabled={detectedFields.length === 0 || isProcessing}
-            >
-              <span className="step-number">4</span>
-              <span className="step-label">Download</span>
-            </button>
-          </nav>
         </section>
 
+        {/* 4-Stage Stepper Navigation */}
+        <nav className="workspace-stepper" aria-label="Form completion stages">
+          <div className={`step-item ${currentStage === 1 ? 'active' : ''} ${currentStage > 1 ? 'completed' : ''}`}>
+            <span className="step-circle">{currentStage > 1 ? <Check className="step-icon-xs" /> : '1'}</span>
+            <span className="step-label">Upload Form</span>
+          </div>
+          <span className="step-divider" aria-hidden="true" />
+
+          <div className={`step-item ${currentStage === 2 ? 'active' : ''} ${currentStage > 2 ? 'completed' : ''}`}>
+            <span className="step-circle">{currentStage > 2 ? <Check className="step-icon-xs" /> : '2'}</span>
+            <span className="step-label">Fill & Edit</span>
+          </div>
+          <span className="step-divider" aria-hidden="true" />
+
+          <div className={`step-item ${currentStage === 3 ? 'active' : ''} ${currentStage > 3 ? 'completed' : ''}`}>
+            <span className="step-circle">{currentStage > 3 ? <Check className="step-icon-xs" /> : '3'}</span>
+            <span className="step-label">Review</span>
+          </div>
+          <span className="step-divider" aria-hidden="true" />
+
+          <div className={`step-item ${currentStage === 4 ? 'active' : ''}`}>
+            <span className="step-circle">4</span>
+            <span className="step-label">Download</span>
+          </div>
+        </nav>
+
         {/* --------------------------------------------------------------------
-            STAGE 1: DOCUMENT UPLOAD
+            STAGE 1: DOCUMENT UPLOAD & OCR TRIGGER
             -------------------------------------------------------------------- */}
         {currentStage === 1 && !isProcessing && (
-          <section className="workspace-card" aria-label="Upload Section">
+          <section className="workspace-card" aria-label="Upload Form Section">
             <DocumentUploader
               selectedFile={selectedFile}
+              selectedFixtureId={selectedFixtureId}
               onFileSelect={handleFileSelect}
               onRemoveFile={handleRemoveFile}
-              onStartAnalysis={handleStartAnalysis}
-              selectedFixtureId={selectedFixtureId}
               onSelectFixture={setSelectedFixtureId}
+              onStartAnalysis={handleStartAnalysis}
             />
           </section>
         )}
 
-        {/* --------------------------------------------------------------------
-            PROCESSING TRANSITION STATE
-            -------------------------------------------------------------------- */}
-        {isProcessing && (
+        {/* Processing State Animation & Fallbacks */}
+        {currentStage === 1 && isProcessing && (
           <DocumentProcessingStatus
-            statusStep={processingStatus}
-            fileName={selectedFile?.name || 'Uploaded Document'}
-            onProceedWithFixture={handleProceedWithFixture}
+            status={processingStatus}
+            fileName={selectedFile?.name || 'document.pdf'}
+            onSelectFixture={handleProceedWithFixture}
             onBackToUpload={() => setIsProcessing(false)}
           />
         )}
 
         {/* --------------------------------------------------------------------
-            STAGE 2: DYNAMIC FILL & EDIT WORKSPACE (TWO COLUMNS)
+            STAGE 2: TWO-COLUMN FILL & EDIT WORKSPACE
             -------------------------------------------------------------------- */}
-        {currentStage === 2 && detectedFields.length > 0 && (
+        {currentStage === 2 && (
           <div className="dynamic-workspace-layout">
-            {/* Left Column: Original Document Preview */}
-            <aside className="workspace-left-column" aria-label="Original Document View">
+            {/* Left Column: Side-by-side Original Document Preview */}
+            <aside className="workspace-left-column">
               <OriginalDocumentPreview
-                fileData={selectedFile}
+                fileUrl={selectedFile?.previewUrl}
+                fileName={documentMetadata?.fileName || 'Original Document'}
+                fields={detectedFields}
                 activeField={activeField}
                 isOpenOnMobile={isMobilePreviewOpen}
                 onToggleMobileOpen={() => setIsMobilePreviewOpen(!isMobilePreviewOpen)}
@@ -386,6 +433,27 @@ export default function GuestWorkspace({ onNavigateHome }) {
             {/* Right Column: Dynamic Fields Editor + Voice Assistant */}
             <div className="workspace-right-column">
               <section className="workspace-card" aria-label="Detected Fields Editor">
+                {/* 1-Click Profile Autofill Banner if Logged In */}
+                {currentUser?.profile && (
+                  <div className="profile-autofill-banner">
+                    <div className="profile-autofill-info">
+                      <Sparkles style={{ width: '16px', height: '16px', color: '#166534', flexShrink: 0 }} />
+                      <span>
+                        Welcome <strong>{currentUser.name}</strong>! Autofill your saved profile details into this form?
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-autofill-action-btn"
+                      onClick={handleAutofillProfile}
+                      title="1-Click Fill Saved Profile"
+                    >
+                      <Sparkles style={{ width: '13px', height: '13px' }} />
+                      1-Click Autofill
+                    </button>
+                  </div>
+                )}
+
                 <DetectedFieldsEditor
                   fields={detectedFields}
                   fieldValues={fieldValues}
@@ -439,34 +507,28 @@ export default function GuestWorkspace({ onNavigateHome }) {
         )}
 
         {/* --------------------------------------------------------------------
-            STAGE 3: REVIEW STAGE
+            STAGE 3: COMPREHENSIVE FORM REVIEW
             -------------------------------------------------------------------- */}
         {currentStage === 3 && (
           <FormReview
-            fileName={documentMetadata?.fileName}
-            formTitle={documentMetadata?.formTitle}
             fields={detectedFields}
             fieldValues={fieldValues}
-            fieldSources={fieldSources}
-            fieldStatuses={fieldStatuses}
+            formTitle={documentMetadata?.formTitle}
+            fileName={documentMetadata?.fileName}
             isFixture={isFixtureData}
-            onEditField={(fieldId) => {
-              setActiveFieldId(fieldId)
-              setCurrentStage(2)
-            }}
-            onBackToEditor={() => setCurrentStage(2)}
+            onBackToEdit={() => setCurrentStage(2)}
             onProceedToDownload={() => setCurrentStage(4)}
           />
         )}
 
         {/* --------------------------------------------------------------------
-            STAGE 4: DOWNLOAD STAGE
+            STAGE 4: OFFICIAL FORM EXPORT & DOWNLOAD
             -------------------------------------------------------------------- */}
         {currentStage === 4 && (
           <DownloadPanel
+            documentId={documentMetadata?.documentId}
             fileName={documentMetadata?.fileName}
             formTitle={documentMetadata?.formTitle}
-            documentId={documentMetadata?.documentId}
             fields={detectedFields}
             fieldValues={fieldValues}
             isFixture={isFixtureData}
@@ -477,47 +539,14 @@ export default function GuestWorkspace({ onNavigateHome }) {
       </main>
 
       {/* --------------------------------------------------------------------
-          PLACEHOLDER AUTH MODAL
+          INTERACTIVE AUTHENTICATION & DEMO LOGIN MODAL
           -------------------------------------------------------------------- */}
-      {authModal.isOpen && (
-        <div className="modal-backdrop" onClick={() => setAuthModal({ isOpen: false, mode: 'signin' })}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">
-                {authModal.mode === 'signin' ? 'Sign In to VaaniFill' : 'Create an Account'}
-              </h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setAuthModal({ isOpen: false, mode: 'signin' })}
-                aria-label="Close modal"
-              >
-                <X className="modal-close-icon" />
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <p className="modal-desc">
-                You are currently in <strong>Guest Mode</strong>. You can upload forms, review detected fields, and export summaries without logging in.
-              </p>
-              <div className="modal-info-box">
-                <CheckCircle2 className="modal-info-icon" />
-                <span>Account synchronization and cloud profiles will be available in the upcoming release.</span>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="primary-btn modal-dismiss-btn"
-                onClick={() => setAuthModal({ isOpen: false, mode: 'signin' })}
-              >
-                Continue in Guest Mode
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AuthModal
+        isOpen={authModal.isOpen}
+        initialMode={authModal.mode}
+        onClose={() => setAuthModal({ isOpen: false, mode: 'signin' })}
+        onLoginSuccess={(user) => setCurrentUser(user)}
+      />
     </div>
   )
 }
