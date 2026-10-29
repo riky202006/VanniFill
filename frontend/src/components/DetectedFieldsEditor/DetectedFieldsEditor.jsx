@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   AlertCircle,
   HelpCircle,
@@ -9,8 +9,18 @@ import {
   RotateCcw,
   UserCheck,
   FileText,
+  Mic,
+  MicOff,
+  Volume2,
+  Play,
+  Pause,
+  Square,
+  SkipForward,
+  SkipBack,
 } from 'lucide-react'
 import { resolveFieldOptions } from '../../constants/indianFormOptions'
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
+import { textToSpeechService } from '../../services/textToSpeechService'
 import './DetectedFieldsEditor.css'
 
 export default function DetectedFieldsEditor({
@@ -31,6 +41,167 @@ export default function DetectedFieldsEditor({
   formTitle = '',
   highlightMissing = false,
 }) {
+  // TTS State
+  const [ttsState, setTtsState] = useState('idle') // 'idle' | 'playing' | 'paused' | 'stopped'
+  const [ttsLang, setTtsLang] = useState('en-US') // 'en-US' | 'hi-IN'
+  const [ttsCurrentFieldId, setTtsCurrentFieldId] = useState(null)
+  const [ttsCurrentIndex, setTtsCurrentIndex] = useState(0)
+
+  // Mode B: Individual Field Voice Recognition State
+  const [activeListeningFieldId, setActiveListeningFieldId] = useState(null)
+  const [fieldDraftValue, setFieldDraftValue] = useState('')
+  const [listeningLang, setListeningLang] = useState('en-US')
+
+  const fieldCardsRef = useRef({})
+
+  const {
+    isSupported: isSpeechSupported,
+    isListening,
+    transcript,
+    interimTranscript,
+    error: speechError,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition({
+    continuous: false,
+    interimResults: true,
+  })
+
+  // Synchronize recognized speech into field draft value
+  useEffect(() => {
+    if (activeListeningFieldId) {
+      if (transcript) {
+        setFieldDraftValue(transcript)
+      } else if (interimTranscript) {
+        setFieldDraftValue(interimTranscript)
+      }
+    }
+  }, [transcript, interimTranscript, activeListeningFieldId])
+
+  // Cleanup TTS and speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      textToSpeechService.stop()
+      stopListening()
+    }
+  }, [stopListening])
+
+  // Scroll to active field when read aloud or focused
+  useEffect(() => {
+    const targetId = ttsCurrentFieldId || activeFieldId
+    if (targetId && fieldCardsRef.current[targetId]) {
+      fieldCardsRef.current[targetId].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      })
+    }
+  }, [ttsCurrentFieldId, activeFieldId])
+
+  // --------------------------------------------------------------------------
+  // TTS Read Aloud Handlers
+  // --------------------------------------------------------------------------
+  const handleToggleReadForm = () => {
+    if (ttsState === 'playing') {
+      textToSpeechService.pause()
+    } else if (ttsState === 'paused') {
+      textToSpeechService.resume()
+    } else {
+      textToSpeechService.startReading({
+        fields,
+        fieldValues,
+        language: ttsLang,
+        startIndex: 0,
+        onFieldStart: (fId, idx) => {
+          setTtsCurrentFieldId(fId)
+          setTtsCurrentIndex(idx)
+        },
+        onStateChange: (state, meta) => {
+          setTtsState(state)
+          if (meta) {
+            setTtsCurrentIndex(meta.currentIndex)
+            if (meta.currentField) {
+              setTtsCurrentFieldId(meta.currentField.id)
+            }
+          }
+          if (state === 'idle' || state === 'stopped') {
+            setTtsCurrentFieldId(null)
+          }
+        },
+      })
+    }
+  }
+
+  const handleStopReading = () => {
+    textToSpeechService.stop()
+    setTtsState('idle')
+    setTtsCurrentFieldId(null)
+  }
+
+  const handleNextField = () => {
+    textToSpeechService.nextField()
+  }
+
+  const handlePrevField = () => {
+    textToSpeechService.prevField()
+  }
+
+  const handleReadSingleField = (field) => {
+    if (ttsState === 'playing') {
+      textToSpeechService.stop()
+    }
+    setTtsCurrentFieldId(field.id)
+    textToSpeechService.readSingleField({
+      field,
+      currentValue: fieldValues[field.id],
+      language: ttsLang,
+      onStart: () => setTtsCurrentFieldId(field.id),
+      onEnd: () => setTtsCurrentFieldId(null),
+    })
+  }
+
+  // --------------------------------------------------------------------------
+  // Mode B: Individual Field Voice Input Handlers
+  // --------------------------------------------------------------------------
+  const handleToggleFieldMic = (field) => {
+    if (activeListeningFieldId === field.id) {
+      // Stop listening for this field
+      stopListening()
+      setActiveListeningFieldId(null)
+      setFieldDraftValue('')
+      resetTranscript()
+    } else {
+      // Switch / start listening for this field
+      if (ttsState === 'playing') {
+        textToSpeechService.stop()
+      }
+      stopListening()
+      resetTranscript()
+      setActiveListeningFieldId(field.id)
+      setFieldDraftValue(fieldValues[field.id] || '')
+      onFieldFocus(field.id)
+      startListening(listeningLang)
+    }
+  }
+
+  const handleConfirmFieldVoice = (fieldId) => {
+    const finalVal = fieldDraftValue.trim()
+    if (finalVal) {
+      onFieldValueChange(fieldId, finalVal)
+    }
+    stopListening()
+    setActiveListeningFieldId(null)
+    setFieldDraftValue('')
+    resetTranscript()
+  }
+
+  const handleCancelFieldVoice = () => {
+    stopListening()
+    setActiveListeningFieldId(null)
+    setFieldDraftValue('')
+    resetTranscript()
+  }
+
   const getBadgeClass = (status) => {
     switch (status) {
       case 'ready': return 'badge-ready'
@@ -81,7 +252,6 @@ export default function DetectedFieldsEditor({
     }
   }
 
-  // Count high-confidence suggestions
   const suggestionKeys = Object.keys(suggestedValues || {})
   const pendingSuggestionsCount = suggestionKeys.length
 
@@ -101,7 +271,96 @@ export default function DetectedFieldsEditor({
         </div>
       </div>
 
-      {/* Review Suggestions Banner (Batch confirmation for high-confidence profile matches) */}
+      {/* --------------------------------------------------------------------
+          READ FORM ALOUD PLAYER TOOLBAR (Accessibility / Speech Synthesis)
+          -------------------------------------------------------------------- */}
+      <div className="read-form-toolbar" role="region" aria-label="Read form aloud controls">
+        <div className="read-toolbar-left">
+          <button
+            type="button"
+            className={`read-aloud-toggle-btn ${ttsState === 'playing' ? 'read-aloud-active' : ''}`}
+            onClick={handleToggleReadForm}
+            title={ttsState === 'playing' ? 'Pause reading' : (ttsState === 'paused' ? 'Resume reading' : 'Read all form fields aloud')}
+          >
+            {ttsState === 'playing' ? <Pause className="btn-icon-xs" /> : <Play className="btn-icon-xs" />}
+            <span>
+              {ttsState === 'playing'
+                ? 'Pause Reading'
+                : ttsState === 'paused'
+                ? 'Resume Reading'
+                : 'Read Form Aloud / फॉर्म सुनें'}
+            </span>
+          </button>
+
+          {ttsState !== 'idle' && (
+            <div className="read-player-controls">
+              <button
+                type="button"
+                className="player-control-btn"
+                onClick={handlePrevField}
+                title="Previous field"
+                aria-label="Previous field"
+              >
+                <SkipBack className="btn-icon-xxs" />
+              </button>
+
+              <button
+                type="button"
+                className="player-control-btn"
+                onClick={handleStopReading}
+                title="Stop reading"
+                aria-label="Stop reading"
+              >
+                <Square className="btn-icon-xxs" />
+              </button>
+
+              <button
+                type="button"
+                className="player-control-btn"
+                onClick={handleNextField}
+                title="Next field"
+                aria-label="Next field"
+              >
+                <SkipForward className="btn-icon-xxs" />
+              </button>
+            </div>
+          )}
+
+          {ttsCurrentFieldId && ttsState === 'playing' && (
+            <span className="reading-indicator-pill">
+              <span className="audio-wave-pulse" /> Reading Field {ttsCurrentIndex + 1} of {fields.length}
+            </span>
+          )}
+        </div>
+
+        <div className="read-toolbar-right">
+          <div className="tts-lang-selector" title="Choose speech language">
+            <span className="lang-label">Voice:</span>
+            <button
+              type="button"
+              className={`tts-lang-btn ${ttsLang === 'en-US' ? 'active' : ''}`}
+              onClick={() => {
+                setTtsLang('en-US')
+                setListeningLang('en-US')
+              }}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={`tts-lang-btn ${ttsLang === 'hi-IN' ? 'active' : ''}`}
+              onClick={() => {
+                setTtsLang('hi-IN')
+                setListeningLang('hi-IN')
+              }}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Review Suggestions Banner */}
       {pendingSuggestionsCount > 0 && (
         <div className="batch-suggestions-banner" role="region" aria-label="Review Profile Suggestions">
           <div className="banner-left">
@@ -158,12 +417,15 @@ export default function DetectedFieldsEditor({
           const isFocused = activeFieldId === field.id
           const isMissingHighlight = highlightMissing && status === 'missing'
           const isFromProfile = source === 'saved_profile'
+          const isReadingAloud = ttsCurrentFieldId === field.id
+          const isFieldListening = activeListeningFieldId === field.id
           const resolvedOptions = resolveFieldOptions(field)
 
           return (
             <div
               key={field.id}
-              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''} ${isFromProfile ? 'field-card-profile-matched' : ''}`}
+              ref={(el) => (fieldCardsRef.current[field.id] = el)}
+              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''} ${isFromProfile ? 'field-card-profile-matched' : ''} ${isReadingAloud ? 'field-card-reading-aloud' : ''}`}
               onClick={() => onFieldFocus(field.id)}
             >
               {/* Field Label & Metadata Bar */}
@@ -176,6 +438,39 @@ export default function DetectedFieldsEditor({
                   {field.pageNumber && (
                     <span className="field-page-tag">Page {field.pageNumber}</span>
                   )}
+
+                  {/* Field Accessibility Controls: Speak & Read Aloud */}
+                  <div className="field-voice-tools">
+                    {/* Mode B: Mic button for this specific field */}
+                    {isSpeechSupported && (
+                      <button
+                        type="button"
+                        className={`field-tool-btn field-mic-btn ${isFieldListening ? 'active-listening' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleFieldMic(field)
+                        }}
+                        title={isFieldListening ? `Stop listening for ${field.label}` : `Speak value for ${field.label}`}
+                        aria-label={`Dictate ${field.label}`}
+                      >
+                        {isFieldListening ? <MicOff className="tool-icon-xs" /> : <Mic className="tool-icon-xs" />}
+                      </button>
+                    )}
+
+                    {/* Single Field Read Aloud */}
+                    <button
+                      type="button"
+                      className="field-tool-btn field-read-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReadSingleField(field)
+                      }}
+                      title={`Read ${field.label} aloud`}
+                      aria-label={`Listen to ${field.label}`}
+                    >
+                      <Volume2 className="tool-icon-xs" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="status-tags-group">
@@ -208,7 +503,6 @@ export default function DetectedFieldsEditor({
               {/* Dynamic Input Control by Type */}
               <div className="field-control-wrapper">
                 {resolvedOptions && resolvedOptions.type === 'grouped' ? (
-                  /* GROUPED DEGREE & COURSE SELECT */
                   <select
                     id={`input-${field.id}`}
                     className="dynamic-select-input"
@@ -232,7 +526,6 @@ export default function DetectedFieldsEditor({
                     <option value="Other">Other / Custom Course</option>
                   </select>
                 ) : resolvedOptions && (resolvedOptions.type === 'flat' || resolvedOptions.type === 'explicit') ? (
-                  /* REAL-WORLD FLAT SELECT (States & UTs, Categories, Occupations, Genders) */
                   <select
                     id={`input-${field.id}`}
                     className="dynamic-select-input"
@@ -266,7 +559,6 @@ export default function DetectedFieldsEditor({
                     ))}
                   </select>
                 ) : field.type === 'textarea' ? (
-                  /* 2. TEXTAREA */
                   <textarea
                     id={`input-${field.id}`}
                     rows={3}
@@ -277,7 +569,6 @@ export default function DetectedFieldsEditor({
                     onChange={(e) => onFieldValueChange(field.id, e.target.value)}
                   />
                 ) : field.type === 'checkbox' ? (
-                  /* 3. CHECKBOX */
                   <label className="dynamic-checkbox-label">
                     <input
                       id={`input-${field.id}`}
@@ -290,7 +581,6 @@ export default function DetectedFieldsEditor({
                     <span>{field.description || 'Confirm this condition'}</span>
                   </label>
                 ) : (
-                  /* 4. STANDARD INPUTS */
                   <input
                     id={`input-${field.id}`}
                     type={
@@ -313,7 +603,64 @@ export default function DetectedFieldsEditor({
                 )}
               </div>
 
-              {/* Form Matching Suggestion Card with 3 Buttons: Use This Value, Edit, Ignore */}
+              {/* Mode B: Inline Field Voice Dictation Box with Confirmation */}
+              {isFieldListening && (
+                <div className="inline-field-voice-box" role="region" aria-label={`Dictate ${field.label}`}>
+                  <div className="voice-box-header">
+                    <span className="live-pulse-dot" />
+                    <span className="voice-box-title">
+                      {isListening ? `Listening for "${field.label}"... Speak clearly` : `Review recognized answer for "${field.label}":`}
+                    </span>
+                  </div>
+
+                  <div className="voice-box-input-row">
+                    <input
+                      type="text"
+                      className="voice-draft-input"
+                      value={fieldDraftValue}
+                      placeholder="Recognized words will appear here (you can edit before applying)..."
+                      onChange={(e) => setFieldDraftValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleConfirmFieldVoice(field.id)
+                        }
+                      }}
+                    />
+
+                    <div className="voice-box-buttons">
+                      <button
+                        type="button"
+                        className="voice-confirm-btn"
+                        onClick={() => handleConfirmFieldVoice(field.id)}
+                        disabled={!fieldDraftValue.trim()}
+                        title="Confirm and fill this value"
+                      >
+                        <Check className="action-icon-xs" />
+                        <span>Confirm & Fill</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="voice-cancel-btn"
+                        onClick={handleCancelFieldVoice}
+                        title="Cancel voice input"
+                      >
+                        <X className="action-icon-xs" />
+                        <span>Cancel</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {speechError && (
+                    <p className="voice-error-text">
+                      <AlertCircle className="error-icon-xxs" /> {speechError}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Form Matching Suggestion Card with 3 Buttons */}
               {suggestionValue && (
                 <div className="suggestion-confirmation-bar" role="region" aria-label="Suggested field value">
                   <div className="suggestion-left">
@@ -338,7 +685,6 @@ export default function DetectedFieldsEditor({
                   </div>
 
                   <div className="suggestion-action-buttons">
-                    {/* Button 1: Use This Value */}
                     <button
                       type="button"
                       className="suggestion-confirm-btn"
@@ -352,7 +698,6 @@ export default function DetectedFieldsEditor({
                       <span>Use This Value</span>
                     </button>
 
-                    {/* Button 2: Edit */}
                     <button
                       type="button"
                       className="suggestion-edit-btn"
@@ -367,7 +712,6 @@ export default function DetectedFieldsEditor({
                       <span>Edit</span>
                     </button>
 
-                    {/* Button 3: Ignore */}
                     <button
                       type="button"
                       className="suggestion-reject-btn"

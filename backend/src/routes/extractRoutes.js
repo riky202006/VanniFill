@@ -6,7 +6,7 @@
 
 import { Router } from 'express'
 import { getFormSchema } from '../data/formSchemas.js'
-import { extractFromTranscript } from '../services/geminiService.js'
+import { extractFromTranscript, answerFormQuestion } from '../services/geminiService.js'
 import { validateForm } from '../services/validationService.js'
 
 const router = Router()
@@ -86,19 +86,8 @@ router.post('/extract', async (req, res, next) => {
         reply = isHindi ? 'जानकारी दर्ज कर ली गई है।' : 'Form fields have been updated.'
       }
     } else {
-      if (transcript.trim().length <= 3) {
-        reply = isHindi
-          ? `नमस्ते! आप फॉर्म भरने के लिए अपने विवरण बोल सकते हैं या लिख सकते हैं। ${follow_up_question || ''}`.trim()
-          : `Hello! You can dictate any field value (e.g. "My name is...") or ask a question. ${follow_up_question || ''}`.trim()
-      } else if (follow_up_question) {
-        reply = isHindi
-          ? `मुझे इस संदेश में कोई नया फॉर्म विवरण नहीं मिला। ${follow_up_question}`
-          : `I didn't detect any form values in that. ${follow_up_question}`
-      } else {
-        reply = isHindi
-          ? 'मुझे कोई नया विवरण नहीं मिला। कृपया अपने विवरण बोलें या प्रश्न पूछें।'
-          : "I didn't detect any new form details in that statement. Please dictate a value or ask a question."
-      }
+      // Intelligently answer questions or provide form-aware guidance
+      reply = await answerFormQuestion(transcript, schema.fields, contextValues, language);
     }
 
     res.status(200).json({

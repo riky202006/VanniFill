@@ -113,7 +113,27 @@ function heuristicExtraction(transcript, fieldsDef) {
       }
     }
 
-    // 8. General fallback for unmentioned fields
+    // 8. City or district extraction
+    else if (id.toLowerCase().includes('city') || id.toLowerCase().includes('sheher') || id.toLowerCase().includes('district')) {
+      const cityMatch = text.match(/(?:\bcity\b|\bsheher\b|\bdistrict\b|\blive\s+in\b|\bfrom\b|\brehta\s+hoon\b|\brehti\s+hoon\b|\bशहर\b)\s*(?:is|hai|:)?\s*([A-Za-z\u0900-\u097F]+)/i);
+      if (cityMatch && !/^(mobile|phone|email|name|male|female)$/i.test(cityMatch[1])) {
+        result[id] = cityMatch[1].trim();
+      }
+    }
+
+    // 9. PIN or postal code extraction (preserving string with leading zeros)
+    else if (id.toLowerCase().includes('pin') || id.toLowerCase().includes('postal') || id.toLowerCase().includes('zip')) {
+      const pinMatch = text.match(/\b(\d{6})\b/);
+      if (pinMatch) result[id] = pinMatch[1];
+    }
+
+    // 10. Annual income
+    else if (id.toLowerCase().includes('income') || id.toLowerCase().includes('aay')) {
+      const incMatch = text.match(/(?:income|aay|salary)\s*(?:is|hai|:)?\s*(\d+)/i);
+      if (incMatch) result[id] = Number(incMatch[1]);
+    }
+
+    // 11. General fallback for unmentioned fields
     else {
       result[id] = null
     }
@@ -361,4 +381,95 @@ Return valid JSON conforming to this schema:
       detectedFields: defaultFields,
     }
   }
+}
+
+
+/**
+ * Contextual Form Q&A Assistant Engine
+ * Answers user questions directly based on the uploaded form's actual schema and values.
+ */
+export async function answerFormQuestion(question, fieldsDef = [], currentValues = {}, language = 'en') {
+  const isHindi = String(language).toLowerCase().startsWith('hi');
+
+  // Tier 1: Try Gemini AI
+  if (genAI) {
+    const prompt = `
+You are the VaaniFill AI Form Assistant.
+The user is filling out a digital form with the following actual detected fields:
+${JSON.stringify(fieldsDef.map((f) => ({
+  id: f.id || f.fieldKey,
+  label: f.label,
+  type: f.type,
+  required: Boolean(f.required),
+  description: f.description || f.placeholder || null,
+  currentValue: currentValues[f.id] || null
+})))}
+
+User Question: "${question}"
+
+Provide a concise, helpful, accurate answer (1 to 3 sentences maximum) in ${isHindi ? 'Hindi (Devanagari script)' : 'English'}.
+Address their question directly based on the form schema and current values above.
+Never invent field values or claim a field has a value when it is null.
+If they ask what a field means, explain its purpose simply.
+If they ask what fields are missing, list only the genuinely empty required fields.
+Output a JSON object with: { "reply": "..." }
+`;
+    try {
+      const res = await generateWithGemini(prompt, 5000);
+      if (res?.parsed?.reply) {
+        return res.parsed.reply;
+      }
+    } catch (e) {
+      console.warn('[Gemini Q&A] Fallback to deterministic Q&A:', e.message);
+    }
+  }
+
+  // Tier 2: Deterministic Context-Aware Q&A
+  const lower = (question || '').toLowerCase().trim();
+
+  // Missing fields inquiry
+  if (lower.includes('missing') || lower.includes('empty') || lower.includes('khali') || lower.includes('baki') || lower.includes('choot')) {
+    const missing = fieldsDef.filter((f) => f.required && (!currentValues[f.id] || String(currentValues[f.id]).trim() === ''));
+    if (missing.length === 0) {
+      return isHindi
+        ? 'फॉर्म के सभी आवश्यक फ़ील्ड भर दिए गए हैं! आप समीक्षा करके डाउनलोड कर सकते हैं।'
+        : 'All required fields are currently completed! You are ready to review and download.';
+    }
+    const missingLabels = missing.map((f) => String(f.label || f.id).split('/')[0].trim()).join(', ');
+    return isHindi
+      ? `फॉर्म में ${missing.length} आवश्यक फ़ील्ड खाली हैं: ${missingLabels}।`
+      : `There are ${missing.length} missing required field(s): ${missingLabels}.`;
+  }
+
+  // Field meaning inquiry
+  const matchedField = fieldsDef.find((f) => {
+    const label = String(f.label || '').toLowerCase();
+    const id = String(f.id || '').toLowerCase();
+    return lower.includes(id) || lower.includes(label.split('/')[0].trim().toLowerCase());
+  });
+
+  if (matchedField) {
+    const label = String(matchedField.label || matchedField.id).split('/')[0].trim();
+    const desc = matchedField.description || matchedField.placeholder || `Enter the official value for ${label}.`;
+    const isReq = matchedField.required ? (isHindi ? 'यह एक आवश्यक फ़ील्ड है।' : 'This field is required.') : (isHindi ? 'यह वैकल्पिक है।' : 'This field is optional.');
+    const curVal = currentValues[matchedField.id] ? (isHindi ? `वर्तमान मान: "${currentValues[matchedField.id]}"।` : `Currently set to "${currentValues[matchedField.id]}".`) : (isHindi ? 'वर्तमान में खाली है।' : 'Currently empty.');
+    return isHindi
+      ? `फ़ील्ड "${label}": ${desc} ${isReq} ${curVal}`
+      : `Field "${label}": ${desc} ${isReq} ${curVal}`;
+  }
+
+  // Completion check
+  if (lower.includes('complete') || lower.includes('ready') || lower.includes('pura') || lower.includes('khatam') || lower.includes('status')) {
+    const total = fieldsDef.length;
+    const filled = fieldsDef.filter((f) => currentValues[f.id] && String(currentValues[f.id]).trim() !== '').length;
+    return isHindi
+      ? `इस फॉर्म में कुल ${total} फ़ील्ड हैं, जिनमें से ${filled} भरे हुए हैं।`
+      : `This form has ${total} fields in total, and ${filled} are currently filled.`;
+  }
+
+  // Default helpful response based on the actual form
+  const fieldListPreview = fieldsDef.slice(0, 3).map((f) => f.label || f.id).join(', ');
+  return isHindi
+    ? `मैं इस फॉर्म के लिए आपका सहायक हूँ (${fieldsDef.length} फ़ील्ड: ${fieldListPreview} आदि)। आप किसी भी फ़ील्ड के बारे में पूछ सकते हैं या मान बोल सकते हैं।`
+    : `I am your assistant for this form (${fieldsDef.length} fields: ${fieldListPreview} etc.). You can ask about any field or dictate values.`;
 }
