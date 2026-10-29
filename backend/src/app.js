@@ -5,14 +5,31 @@
 
 import express from 'express'
 import cors from 'cors'
+import guestRoutes from './routes/guestRoutes.js'
+import documentRoutes from './routes/documentRoutes.js'
+import formRoutes from './routes/formRoutes.js'
+import extractRoutes from './routes/extractRoutes.js'
 
 const app = express()
 
 // Global Middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.CORS_ORIGIN
+].filter(Boolean)
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or Chrome extension background workers)
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('chrome-extension://')) {
+      return callback(null, true)
+    }
+    return callback(null, true) // Permissive for local hackathon collaboration
+  },
   credentials: true,
 }))
+
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
@@ -25,21 +42,29 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// Root API placeholder
+// Root API Directory
 app.get('/api', (req, res) => {
   res.json({
     name: 'VaaniFill AI API',
     version: '1.0.0',
-    description: 'Multilingual form assistance API',
+    description: 'Multilingual voice and document form assistance API',
     endpoints: {
-      health: '/api/health',
-      guest: '/api/guest',
-      documents: '/api/documents',
-      forms: '/api/forms',
-      auth: '/api/auth',
+      health: 'GET /api/health',
+      guestSession: 'POST /api/guest/session',
+      documentsUpload: 'POST /api/documents/upload',
+      forms: 'GET /api/forms',
+      formMatch: 'POST /api/forms/match',
+      voiceExtract: 'POST /api/extract',
+      fieldValidate: 'POST /api/validate'
     },
   })
 })
+
+// Feature Route Modules
+app.use('/api/guest', guestRoutes)
+app.use('/api/documents', documentRoutes)
+app.use('/api/forms', formRoutes)
+app.use('/api', extractRoutes)
 
 // 404 Handler
 app.use((req, res) => {
