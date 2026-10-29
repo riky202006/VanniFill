@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition'
 import { processAssistantQuery } from '../../services/formAssistantService'
+import apiClient from '../../services/apiClient'
 import './VoiceAssistant.css'
 
 export default function VoiceAssistant({
@@ -40,28 +41,39 @@ export default function VoiceAssistant({
     startListening,
     stopListening,
     resetTranscript,
-  } = useSpeechRecognition()
+  } = useSpeechRecognition({
+    continuous: true,
+    interimResults: true,
+  })
 
-  // Sync incoming speech transcript into editable text input
+  // Synchronize interim/final speech recognition transcript into the text input
   useEffect(() => {
     if (transcript) {
       setInputText(transcript)
     }
   }, [transcript])
 
+  // Auto-scroll chat history to the latest message
   useEffect(() => {
-    chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    }
   }, [messages])
 
-  const handleToggleVoice = () => {
+  const toggleListening = () => {
     if (isListening) {
       stopListening()
+      if (inputText.trim()) {
+        handleSendMessage(inputText)
+      }
     } else {
+      resetTranscript()
+      setInputText('')
       startListening(lang)
     }
   }
 
-  const handleSendMessage = (customText = null) => {
+  const handleSendMessage = async (customText = null) => {
     const textToSend = (customText || inputText).trim()
     if (!textToSend) return
 
@@ -73,32 +85,92 @@ export default function VoiceAssistant({
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
 
-    // Process contextually against currently detected fields!
-    const result = processAssistantQuery({
+    setMessages((prev) => [...prev, userMsg])
+    setInputText('')
+    resetTranscript()
+
+    // 1. Process deterministic local actions first (explanations, navigation, missing fields)
+    const localResult = processAssistantQuery({
       query: textToSend,
       fields,
       values: fieldValues,
       language: lang,
     })
 
-    if (result.focusFieldId) {
-      onNavigateToField(result.focusFieldId)
+    if (localResult.focusFieldId) {
+      onNavigateToField(localResult.focusFieldId)
     }
 
-    if (result.highlightMissing) {
+    if (localResult.highlightMissing) {
       onHighlightMissingFields(true)
     }
 
-    const assistantMsg = {
-      sender: 'assistant',
-      text: result.reply,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      proposedChange: result.proposedChange,
+    // If local query found an explanation, field navigation, or explicit manual update proposal
+    const isGenericFallback = localResult.reply.includes('I am your assistant for this')
+    if (!isGenericFallback || localResult.proposedChange) {
+      const assistantMsg = {
+        sender: 'assistant',
+        text: localResult.reply,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        proposedChange: localResult.proposedChange,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
     }
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg])
-    setInputText('')
-    resetTranscript()
+    // 2. Otherwise, route speech transcript to Backend AI Engine (Groq + Gemini 2.5 Flash)
+    try {
+      const apiRes = await apiClient.post('/extract', {
+        transcript: textToSend,
+        fields,
+        current_values: fieldValues,
+        language: lang.startsWith('hi') ? 'hi' : 'en',
+      })
+
+      const extractedEntries = Object.entries(apiRes.values || {}).filter(
+        ([, v]) => v !== null && v !== undefined && String(v).trim() !== ''
+      )
+
+      if (extractedEntries.length > 0) {
+        // Apply extracted fields directly to the form
+        extractedEntries.forEach(([fieldId, val]) => {
+          onApplyProposedChange(fieldId, val)
+        })
+
+        const summary = extractedEntries
+          .map(([k, v]) => {
+            const fObj = fields.find((f) => f.id === k)
+            const labelText = fObj?.label ? String(fObj.label).split('/')[0].trim() : k
+            return `${labelText}: "${v}"`
+          })
+          .join(', ')
+
+        const assistantMsg = {
+          sender: 'assistant',
+          text: `Updated: ${summary}. ${apiRes.follow_up_question || ''}`.trim(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          proposedChange: null,
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+      } else {
+        const assistantMsg = {
+          sender: 'assistant',
+          text: apiRes.reply || localResult.reply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          proposedChange: null,
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+      }
+    } catch {
+      // Fallback to local response if backend API is not reachable
+      const assistantMsg = {
+        sender: 'assistant',
+        text: localResult.reply,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        proposedChange: null,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+    }
   }
 
   return (
@@ -118,6 +190,7 @@ export default function VoiceAssistant({
             type="button"
             className={`lang-option ${lang === 'en-US' ? 'lang-active' : ''}`}
             onClick={() => setLang('en-US')}
+            title="English"
           >
             English
           </button>
@@ -125,120 +198,109 @@ export default function VoiceAssistant({
             type="button"
             className={`lang-option ${lang === 'hi-IN' ? 'lang-active' : ''}`}
             onClick={() => setLang('hi-IN')}
+            title="Hindi"
           >
-            हिन्दी
+            हिंदी
           </button>
         </div>
 
-        <div className="listening-state-badge">
-          {isListening ? (
-            <span className="mic-pulsing-badge">Listening...</span>
-          ) : (
-            <span className="mic-idle-badge">Ready</span>
-          )}
-        </div>
-      </div>
-
-      {/* Chat Messages Stream */}
-      <div className="assistant-dialogue-stream">
-        {messages.map((m, idx) => (
-          <div key={idx} className={`dialogue-bubble ${m.sender === 'user' ? 'bubble-from-user' : 'bubble-from-ai'}`}>
-            <p className="dialogue-text">{m.text}</p>
-
-            {/* Proposed Change Confirmation Box */}
-            {m.proposedChange && (
-              <div className="proposed-change-card">
-                <span className="proposal-title">Confirm Form Update:</span>
-                <p className="proposal-detail">
-                  Update <strong>{m.proposedChange.fieldLabel}</strong> to:
-                  <br />
-                  <span className="proposed-new-val">"{m.proposedChange.newValue}"</span>
-                </p>
-                <div className="proposal-actions">
-                  <button
-                    type="button"
-                    className="confirm-proposal-btn"
-                    onClick={() => onApplyProposedChange(m.proposedChange.fieldId, m.proposedChange.newValue)}
-                  >
-                    <Check className="action-icon-xs" />
-                    <span>Apply to Form</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <span className="dialogue-timestamp">{m.time}</span>
-          </div>
-        ))}
-        <div ref={chatScrollRef} />
-      </div>
-
-      {/* Speech Error Banner */}
-      {speechError && (
-        <div className="speech-error-alert" role="alert">
-          <AlertCircle className="error-icon-xs" />
-          <span>{speechError}</span>
-        </div>
-      )}
-
-      {!isSpeechSupported && (
-        <div className="unsupported-speech-note">
-          <span>Voice recognition is not available in this browser. You can type below instead.</span>
-        </div>
-      )}
-
-      {/* Quick Example Query Chips */}
-      <div className="contextual-chips-row">
-        <button
-          type="button"
-          className="context-chip"
-          onClick={() => handleSendMessage('Which fields are still missing?')}
-        >
-          "Which fields are missing?"
-        </button>
-        {fields[0] && (
-          <button
-            type="button"
-            className="context-chip"
-            onClick={() => handleSendMessage(`What does ${fields[0].label.split('/')[0]} mean?`)}
-          >
-            "What does {fields[0].label.split('/')[0]} mean?"
-          </button>
+        {isListening && (
+          <span className="audio-listening-badge" role="status">
+            <span className="pulse-dot" /> Listening...
+          </span>
         )}
       </div>
 
-      {/* Input Composer Bar */}
-      <div className="assistant-composer-bar">
-        <button
-          type="button"
-          className={`mic-action-btn ${isListening ? 'mic-active' : ''}`}
-          onClick={handleToggleVoice}
-          title={isListening ? 'Stop listening' : 'Start microphone voice input'}
-          aria-label={isListening ? 'Stop microphone' : 'Start microphone'}
-          disabled={!isSpeechSupported}
-        >
-          {isListening ? <MicOff className="mic-svg" /> : <Mic className="mic-svg" />}
-        </button>
+      {/* Chat Messages Log */}
+      <div className="chat-messages-scroll" ref={chatScrollRef} role="log" aria-live="polite">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`message-bubble ${msg.sender === 'user' ? 'message-user' : 'message-assistant'}`}
+          >
+            <div className="message-content">
+              <p className="message-text">{msg.text}</p>
+
+              {/* Proposed Change Confirmation Box */}
+              {msg.proposedChange && (
+                <div className="proposed-change-box" role="region" aria-label="Confirm field update">
+                  <span className="proposed-label">Confirm Form Update:</span>
+                  <p className="proposed-summary">
+                    Update <strong>{msg.proposedChange.fieldLabel}</strong> to:
+                    <br />
+                    <em>"{msg.proposedChange.newValue}"</em>
+                  </p>
+                  <button
+                    type="button"
+                    className="apply-proposed-btn"
+                    onClick={() => {
+                      onApplyProposedChange(msg.proposedChange.fieldId, msg.proposedChange.newValue)
+                      setMessages((prev) => [
+                        ...prev,
+                        {
+                          sender: 'assistant',
+                          text: `Applied "${msg.proposedChange.newValue}" to ${msg.proposedChange.fieldLabel}!`,
+                          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                          proposedChange: null,
+                        },
+                      ])
+                    }}
+                  >
+                    <Check className="btn-icon-xs" /> Apply to Form
+                  </button>
+                </div>
+              )}
+            </div>
+            <span className="message-timestamp">{msg.time}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Mic / Keyboard Input Control Bar */}
+      <div className="assistant-input-bar">
+        {isSpeechSupported && (
+          <button
+            type="button"
+            className={`assistant-mic-btn ${isListening ? 'mic-active-recording' : ''}`}
+            onClick={toggleListening}
+            title={isListening ? 'Stop listening' : 'Start speaking'}
+            aria-label={isListening ? 'Stop recording voice' : 'Start recording voice'}
+          >
+            {isListening ? <MicOff className="mic-icon" /> : <Mic className="mic-icon" />}
+          </button>
+        )}
 
         <input
           type="text"
-          className="composer-input-field"
-          placeholder="Ask a question or dictate a field..."
+          className="assistant-text-input"
+          placeholder={isListening ? 'Listening to your speech...' : 'Ask a question or dictate details...'}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSendMessage()
+            }
+          }}
         />
 
         <button
           type="button"
-          className="send-action-btn"
+          className="assistant-send-btn"
           onClick={() => handleSendMessage()}
-          title="Send instruction"
-          aria-label="Send message"
+          disabled={!inputText.trim() && !isListening}
+          title="Send message"
+          aria-label="Send query to assistant"
         >
-          <Send className="send-svg" />
+          <Send className="send-icon" />
         </button>
       </div>
+
+      {speechError && (
+        <div className="speech-error-notice" role="alert">
+          <AlertCircle className="error-icon-xs" />
+          <span>Microphone notice: {speechError}. You can type your request.</span>
+        </div>
+      )}
     </div>
   )
 }

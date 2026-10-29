@@ -497,9 +497,16 @@ export default function DocumentWorkspace({
         <FormReview
           fields={detectedFields}
           fieldValues={fieldValues}
+          fieldSources={fieldSources}
+          fieldStatuses={fieldStatuses}
           formTitle={documentMetadata?.formTitle}
           fileName={documentMetadata?.fileName}
           isFixture={isFixtureData}
+          onEditField={(fieldId) => {
+            setActiveFieldId(fieldId)
+            setCurrentStage(2)
+          }}
+          onBackToEditor={() => setCurrentStage(2)}
           onBackToEdit={() => setCurrentStage(2)}
           onProceedToDownload={() => setCurrentStage(4)}
         />
