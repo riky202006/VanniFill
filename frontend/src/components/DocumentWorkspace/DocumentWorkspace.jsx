@@ -120,9 +120,9 @@ export default function DocumentWorkspace({
           setIsProcessing(false)
           setCurrentStage(2)
         }
-      }, 2000)
+      }, 300)
     } catch {
-      setTimeout(() => setProcessingStatus('unconnected'), 1500)
+      setTimeout(() => setProcessingStatus('unconnected'), 300)
     }
   }
 

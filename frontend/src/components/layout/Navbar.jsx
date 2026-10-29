@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import {
   Home,
   User,
+  FileCheck,
   Settings,
   LogOut,
   Menu,
@@ -75,6 +76,15 @@ export default function Navbar({
 
           <button
             type="button"
+            className={`nav-item-btn ${activeView === 'submissions' ? 'active' : ''}`}
+            onClick={() => handleNavClick('submissions')}
+          >
+            <FileCheck className="nav-item-icon" />
+            <span>My Submissions</span>
+          </button>
+
+          <button
+            type="button"
             className={`nav-item-btn ${activeView === 'settings' ? 'active' : ''}`}
             onClick={() => handleNavClick('settings')}
           >
@@ -136,6 +146,16 @@ export default function Navbar({
                     >
                       <User className="dropdown-icon" />
                       <span>My Information</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="dropdown-item"
+                      onClick={() => handleNavClick('submissions')}
+                    >
+                      <FileCheck className="dropdown-icon" />
+                      <span>My Submissions</span>
                     </button>
 
                     <button
@@ -209,6 +229,15 @@ export default function Navbar({
             >
               <User className="mobile-link-icon" />
               <span>My Information</span>
+            </button>
+
+            <button
+              type="button"
+              className={`mobile-nav-link ${activeView === 'submissions' ? 'active' : ''}`}
+              onClick={() => handleNavClick('submissions')}
+            >
+              <FileCheck className="mobile-link-icon" />
+              <span>My Submissions</span>
             </button>
 
             <button

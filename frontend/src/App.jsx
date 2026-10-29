@@ -3,6 +3,7 @@ import Welcome from './pages/Welcome/Welcome'
 import GuestWorkspace from './pages/Guest/GuestWorkspace'
 import HomePage from './pages/Home/HomePage'
 import MyInformationPage from './pages/Profile/MyInformationPage'
+import SubmissionsPage from './pages/Submissions/SubmissionsPage'
 import AccountSettingsPage from './pages/Settings/AccountSettingsPage'
 import Navbar from './components/layout/Navbar'
 import { getProfile, clearProfileSession } from './services/profileService'
@@ -24,7 +25,7 @@ export default function App() {
   // Lightweight hash-aware view router ('welcome' | 'guest' | 'home' | 'my-information' | 'settings')
   const [currentView, setCurrentView] = useState(() => {
     const hash = window.location.hash.replace(/^#\/?/, '')
-    if (['welcome', 'guest', 'home', 'my-information', 'settings'].includes(hash)) {
+    if (['welcome', 'guest', 'home', 'my-information', 'submissions', 'settings'].includes(hash)) {
       return hash
     }
     // Default to 'home' if already logged in, otherwise 'welcome'
@@ -40,7 +41,7 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '')
-      if (['welcome', 'guest', 'home', 'my-information', 'settings'].includes(hash)) {
+      if (['welcome', 'guest', 'home', 'my-information', 'submissions', 'settings'].includes(hash)) {
         setCurrentView(hash)
       }
     }
@@ -127,7 +128,7 @@ export default function App() {
   }
 
   // 3. Signed-In Application Shell (Home, My Information, Account Settings)
-  const isNavShellView = ['home', 'my-information', 'settings'].includes(currentView)
+  const isNavShellView = ['home', 'my-information', 'submissions', 'settings'].includes(currentView)
 
   return (
     <div className="app-authenticated-shell">
@@ -156,6 +157,11 @@ export default function App() {
           currentUser={currentUser}
           onProfileUpdated={(updated) => setUserProfile(updated)}
         />
+      )}
+
+      {/* View 3: Submissions History & Official Receipts */}
+      {currentView === 'submissions' && (
+        <SubmissionsPage onNavigateToHome={() => navigateTo('home')} />
       )}
 
       {/* View 3: Account Settings */}

@@ -10,6 +10,7 @@ export const createEmptyProfile = () => ({
     fullName: '',
     dateOfBirth: '',
     gender: '',
+    category: '',
     nationality: 'Indian',
   },
   contact: {
@@ -51,6 +52,7 @@ export const createEmptyProfile = () => ({
   employment: {
     employer: '',
     jobTitle: '',
+    occupation: '',
     experience: '',
   },
   customFields: [],
@@ -66,6 +68,7 @@ export const SAMPLE_PROFILE_FIXTURE = {
     fullName: 'Riky Nayak',
     dateOfBirth: '2001-08-15',
     gender: 'Male',
+    category: 'General / Unreserved (UR)',
     nationality: 'Indian',
   },
   contact: {
@@ -107,6 +110,7 @@ export const SAMPLE_PROFILE_FIXTURE = {
   employment: {
     employer: 'Ctrl Freaks Lab',
     jobTitle: 'Frontend Engineer',
+    occupation: 'Salaried Employee (Private Sector)',
     experience: '2 Years',
   },
   customFields: [

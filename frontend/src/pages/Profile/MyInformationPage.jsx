@@ -30,6 +30,12 @@ import {
   updateProfile,
   getSampleProfile,
 } from '../../services/profileService'
+import {
+  INDIAN_STATES_AND_UTS,
+  INDIAN_COURSES_BY_LEVEL,
+  SOCIAL_CATEGORIES,
+  OCCUPATIONS
+} from '../../constants/indianFormOptions'
 import './MyInformationPage.css'
 
 export default function MyInformationPage({ onProfileUpdated }) {
@@ -498,6 +504,25 @@ export default function MyInformationPage({ onProfileUpdated }) {
 
                 {/* Nationality */}
                 <div className="form-field-group">
+                  <label htmlFor="basic-category" className="field-label">
+                    Social Category / सामाजिक श्रेणी
+                  </label>
+                  <select
+                    id="basic-category"
+                    className="field-select"
+                    value={profile.basic?.category || ''}
+                    onChange={(e) => handleFieldChange('basic', 'category', e.target.value)}
+                  >
+                    <option value="">-- Select Category / श्रेणी चुनें --</option>
+                    {SOCIAL_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field-group">
                   <label htmlFor="basic-nationality" className="field-label">
                     Nationality
                   </label>
@@ -656,14 +681,19 @@ export default function MyInformationPage({ onProfileUpdated }) {
 
                   <div className="form-field-group">
                     <label htmlFor="perm-state" className="field-label">State / Province</label>
-                    <input
+                    <select
                       id="perm-state"
-                      type="text"
-                      className="field-input"
-                      placeholder="e.g. Assam"
+                      className="field-select"
                       value={profile.address?.permanent?.state || ''}
                       onChange={(e) => handleAddressFieldChange('permanent', 'state', e.target.value)}
-                    />
+                    >
+                      <option value="">-- Select State / Union Territory --</option>
+                      {INDIAN_STATES_AND_UTS.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-field-group">
@@ -764,14 +794,19 @@ export default function MyInformationPage({ onProfileUpdated }) {
 
                       <div className="form-field-group">
                         <label htmlFor="curr-state" className="field-label">State / Province</label>
-                        <input
+                        <select
                           id="curr-state"
-                          type="text"
-                          className="field-input"
-                          placeholder="e.g. Assam"
+                          className="field-select"
                           value={profile.address?.current?.state || ''}
                           onChange={(e) => handleAddressFieldChange('current', 'state', e.target.value)}
-                        />
+                        >
+                          <option value="">-- Select State / Union Territory --</option>
+                          {INDIAN_STATES_AND_UTS.map((st) => (
+                            <option key={st} value={st}>
+                              {st}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div className="form-field-group">
@@ -842,15 +877,26 @@ export default function MyInformationPage({ onProfileUpdated }) {
                 </div>
 
                 <div className="form-field-group">
-                  <label htmlFor="edu-course" className="field-label">Course / Programme</label>
-                  <input
+                  <label htmlFor="edu-course" className="field-label">Course / Degree Program</label>
+                  <select
                     id="edu-course"
-                    type="text"
-                    className="field-input"
-                    placeholder="e.g. Bachelor of Technology"
+                    className="field-select"
                     value={profile.education?.course || ''}
                     onChange={(e) => handleFieldChange('education', 'course', e.target.value)}
-                  />
+                  >
+                    <option value="">-- Select Course / Program --</option>
+                    {profile.education?.course && !Object.values(INDIAN_COURSES_BY_LEVEL).flat().includes(profile.education.course) && (
+                      <option value={profile.education.course}>{profile.education.course} (Custom)</option>
+                    )}
+                    {Object.entries(INDIAN_COURSES_BY_LEVEL).map(([group, courses]) => (
+                      <optgroup key={group} label={group}>
+                        {courses.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value="Other">Other / Custom Course</option>
+                  </select>
                 </div>
 
                 <div className="form-field-group">
@@ -991,6 +1037,21 @@ export default function MyInformationPage({ onProfileUpdated }) {
                     value={profile.employment?.employer || ''}
                     onChange={(e) => handleFieldChange('employment', 'employer', e.target.value)}
                   />
+                </div>
+
+                <div className="form-field-group">
+                  <label htmlFor="emp-occupation" className="field-label">Occupation / Employment Category</label>
+                  <select
+                    id="emp-occupation"
+                    className="field-select"
+                    value={profile.employment?.occupation || ''}
+                    onChange={(e) => handleFieldChange('employment', 'occupation', e.target.value)}
+                  >
+                    <option value="">-- Select Occupation Category --</option>
+                    {OCCUPATIONS.map((occ) => (
+                      <option key={occ} value={occ}>{occ}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-field-group">

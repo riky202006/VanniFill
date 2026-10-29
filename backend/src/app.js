@@ -10,6 +10,8 @@ import documentRoutes from './routes/documentRoutes.js'
 import formRoutes from './routes/formRoutes.js'
 import extractRoutes from './routes/extractRoutes.js'
 import authRoutes, { userRouter } from './routes/authRoutes.js'
+import optionsRoutes from './routes/optionsRoutes.js'
+import submissionRoutes from './routes/submissionRoutes.js'
 import { isMongoConnected } from './config/db.js'
 
 const app = express()
@@ -73,7 +75,9 @@ app.use('/api/guest', guestRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/forms', formRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/user/submissions', submissionRoutes)
 app.use('/api/user', userRouter)
+app.use('/api/options', optionsRoutes)
 app.use('/api', extractRoutes)
 
 // 404 Handler

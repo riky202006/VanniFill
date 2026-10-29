@@ -122,6 +122,20 @@ export function matchFieldsWithProfile(fields = [], profile = null) {
       return
     }
 
+    if (
+      profile.basic?.category &&
+      (searchTarget.includes('category') || searchTarget.includes('caste') || searchTarget.includes('reservation') || searchTarget.includes('shreni'))
+    ) {
+      suggestions[field.id] = {
+        value: profile.basic.category,
+        confidence: 'high',
+        sourceCategory: 'Basic Information',
+        sourceLabel: 'Social Category',
+        explanation: 'Matched with saved Social Category in My Information.',
+      }
+      return
+    }
+
     // ------------------------------------------------------------------------
     // 2. Contact Information Matching
     // ------------------------------------------------------------------------
@@ -276,10 +290,23 @@ export function matchFieldsWithProfile(fields = [], profile = null) {
     }
 
     if (
+      profile.employment?.occupation &&
+      (searchTarget.includes('occupation') || searchTarget.includes('profession') || searchTarget.includes('employment type'))
+    ) {
+      suggestions[field.id] = {
+        value: profile.employment.occupation,
+        confidence: 'high',
+        sourceCategory: 'Employment',
+        sourceLabel: 'Occupation',
+        explanation: 'Matched with saved Occupation Category in My Information.',
+      }
+      return
+    }
+
+    if (
       profile.employment?.jobTitle &&
       (searchTarget.includes('designation') ||
         searchTarget.includes('job title') ||
-        searchTarget.includes('occupation') ||
         searchTarget.includes('role'))
     ) {
       suggestions[field.id] = {

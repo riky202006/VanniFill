@@ -191,6 +191,24 @@ async function runTests() {
     })
     assert(resReg.status === 201 && resReg.data.token && resReg.data.user.name === 'Riky Nayak', 'POST /api/auth/register registers new user and issues JWT')
 
+    // Test 14: Options API - Indian States & UTs
+    const resStates = await request('GET', '/api/options/states')
+    assert(resStates.status === 200 && Array.isArray(resStates.data.states) && resStates.data.states.length === 36, 'GET /api/options/states returns all 36 Indian States & UTs')
+
+    // Test 15: Options API - Courses & Academic Streams
+    const resCourses = await request('GET', '/api/options/courses')
+    assert(resCourses.status === 200 && Array.isArray(resCourses.data.flatCourses) && resCourses.data.flatCourses.length > 20, 'GET /api/options/courses returns structured Indian degrees & vocational courses')
+
+    // Test 16: Options API - Social Categories & Occupations
+    const resAllOpts = await request('GET', '/api/options/all')
+    assert(resAllOpts.status === 200 && resAllOpts.data.categories.length >= 5 && resAllOpts.data.templates.length >= 6, 'GET /api/options/all returns comprehensive dropdown options and portal templates')
+
+    // Test 17: User Submissions History
+    const resSubmissions = await request('GET', '/api/user/submissions', null, {
+      'Authorization': `Bearer ${authToken}`
+    })
+    assert(resSubmissions.status === 200 && Array.isArray(resSubmissions.data.submissions), 'GET /api/user/submissions returns application history')
+
   } catch (err) {
     console.error('Fatal error during test run:', err)
     failed++

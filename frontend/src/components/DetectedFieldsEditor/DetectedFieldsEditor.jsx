@@ -10,6 +10,7 @@ import {
   UserCheck,
   FileText,
 } from 'lucide-react'
+import { resolveFieldOptions } from '../../constants/indianFormOptions'
 import './DetectedFieldsEditor.css'
 
 export default function DetectedFieldsEditor({
@@ -157,6 +158,7 @@ export default function DetectedFieldsEditor({
           const isFocused = activeFieldId === field.id
           const isMissingHighlight = highlightMissing && status === 'missing'
           const isFromProfile = source === 'saved_profile'
+          const resolvedOptions = resolveFieldOptions(field)
 
           return (
             <div
@@ -205,8 +207,50 @@ export default function DetectedFieldsEditor({
 
               {/* Dynamic Input Control by Type */}
               <div className="field-control-wrapper">
-                {/* 1. SELECT DROPDOWN */}
-                {field.type === 'select' ? (
+                {resolvedOptions && resolvedOptions.type === 'grouped' ? (
+                  /* GROUPED DEGREE & COURSE SELECT */
+                  <select
+                    id={`input-${field.id}`}
+                    className="dynamic-select-input"
+                    value={currentValue}
+                    onFocus={() => onFieldFocus(field.id)}
+                    onChange={(e) => onFieldValueChange(field.id, e.target.value)}
+                  >
+                    <option value="">-- Select Degree or Course / पाठ्यक्रम चुनें --</option>
+                    {currentValue && !Object.values(resolvedOptions.groups).flat().includes(currentValue) && (
+                      <option value={currentValue}>{currentValue} (Current / Custom)</option>
+                    )}
+                    {Object.entries(resolvedOptions.groups).map(([groupName, courses]) => (
+                      <optgroup key={groupName} label={groupName}>
+                        {courses.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value="Other">Other / Custom Course</option>
+                  </select>
+                ) : resolvedOptions && (resolvedOptions.type === 'flat' || resolvedOptions.type === 'explicit') ? (
+                  /* REAL-WORLD FLAT SELECT (States & UTs, Categories, Occupations, Genders) */
+                  <select
+                    id={`input-${field.id}`}
+                    className="dynamic-select-input"
+                    value={currentValue}
+                    onFocus={() => onFieldFocus(field.id)}
+                    onChange={(e) => onFieldValueChange(field.id, e.target.value)}
+                  >
+                    <option value="">-- Choose {field.label ? field.label.split('/')[0].trim() : 'Option'} --</option>
+                    {currentValue && !resolvedOptions.options.includes(currentValue) && (
+                      <option value={currentValue}>{currentValue} (Current / Custom)</option>
+                    )}
+                    {resolvedOptions.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === 'select' ? (
                   <select
                     id={`input-${field.id}`}
                     className="dynamic-select-input"
