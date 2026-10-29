@@ -1,0 +1,878 @@
+/* ==========================================================================
+   VAANIFILL AI - WELCOME PAGE STYLING
+   ========================================================================== */
+
+/* Page Viewport Wrapper */
+.welcome-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-page);
+  padding: 40px 24px;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   1. BACKGROUND & LUMINOUS GLOW
+   -------------------------------------------------------------------------- */
+
+/* Large softly blurred forest-green glow behind main content, mostly on right */
+.background-glow {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  transform: translate(10%, -48%);
+  width: min(75vw, 950px);
+  height: min(75vw, 850px);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 55% 45%,
+    rgba(23, 107, 80, 0.28) 0%,
+    rgba(34, 123, 94, 0.18) 32%,
+    rgba(220, 233, 223, 0.12) 60%,
+    transparent 78%
+  );
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+  animation: slowGlowPulse 22s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+/* Secondary subtle ambient counter-glow on top-left */
+.background-glow-secondary {
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: min(50vw, 600px);
+  height: min(50vw, 600px);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(247, 247, 242, 0) 70%
+  );
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. MAIN GLASS PANEL
+   -------------------------------------------------------------------------- */
+.main-glass-panel {
+  position: relative;
+  z-index: 1;
+  width: min(84vw, 1250px);
+  min-height: 620px;
+  height: 78vh;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+  animation: panelEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle top glass highlight */
+.main-glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.9) 30%,
+    rgba(255, 255, 255, 0.9) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. TOP NAVIGATION
+   -------------------------------------------------------------------------- */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 48px 16px 48px;
+  z-index: 5;
+}
+
+/* Brand Identity */
+.brand-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  user-select: none;
+}
+
+.brand-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(23, 107, 80, 0.16);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.brand-identity:hover .brand-mark {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4.5px rgba(23, 107, 80, 0.22);
+}
+
+.brand-name {
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-main);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.brand-badge {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--primary-green);
+  background-color: var(--light-green);
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+/* Navigation Links */
+.panel-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nav-link {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  position: relative;
+  padding: 4px 0;
+  transition: color var(--transition-fast);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--primary-green);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--text-main);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* --------------------------------------------------------------------------
+   4. PANEL BODY (TWO COLUMNS)
+   -------------------------------------------------------------------------- */
+.panel-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 12px 48px 48px 48px;
+  position: relative;
+}
+
+/* Left Content Column */
+.left-content {
+  flex: 1;
+  max-width: 520px;
+  padding-right: 40px;
+  z-index: 2;
+  animation: contentFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.content-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary-green);
+  margin-bottom: 22px;
+}
+
+.eyebrow-accent {
+  display: inline-block;
+  width: 16px;
+  height: 1.5px;
+  background-color: var(--primary-green);
+  border-radius: 1px;
+}
+
+.content-headline {
+  font-family: var(--font-heading);
+  font-size: clamp(38px, 3.8vw, 52px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--text-main);
+  margin-bottom: 22px;
+}
+
+.headline-line {
+  display: block;
+}
+
+.content-description {
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.68;
+  color: var(--text-secondary);
+  max-width: 440px;
+  margin-bottom: 34px;
+}
+
+/* Call to Action */
+.action-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.primary-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--primary-green);
+  color: #FFFFFF;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 14px 28px;
+  border-radius: var(--button-radius);
+  box-shadow: var(--button-shadow);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.btn-arrow-icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.2;
+  transition: transform var(--transition-fast);
+}
+
+.primary-cta-btn:hover {
+  background-color: var(--primary-green-hover);
+  transform: translateY(-1.5px);
+  box-shadow: var(--button-shadow-hover);
+}
+
+.primary-cta-btn:hover .btn-arrow-icon {
+  transform: translateX(4px);
+}
+
+.primary-cta-btn:active {
+  background-color: var(--primary-green-active);
+  transform: translateY(0);
+  box-shadow: var(--button-shadow);
+}
+
+.action-caption {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.caption-dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   5. RIGHT VISUAL ELEMENT (ARCHITECTURAL PANELS)
+   -------------------------------------------------------------------------- */
+.right-visual-container {
+  flex: 1.1;
+  height: 100%;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  perspective: 1200px;
+  animation: contentFadeUp 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+/* Behind-panel soft ambient halo */
+.visual-ambient-aura {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(23, 107, 80, 0.32) 0%,
+    rgba(34, 123, 94, 0.16) 45%,
+    transparent 72%
+  );
+  filter: blur(48px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Perspective stage holding the 4 slabs */
+.architectural-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  transform: rotateY(-7deg) rotateX(2.5deg);
+  width: 480px;
+  height: 500px;
+  z-index: 1;
+}
+
+/* The 4 Layered Vertical Panels */
+.arch-panel {
+  position: relative;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 18px;
+  user-select: none;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  will-change: transform;
+}
+
+/* Subtle top sheen highlight on all panels */
+.arch-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 40%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+/* Subtle surface mesh lines */
+.arch-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* --- PANEL 1 (Deepest / Left) --- */
+.arch-panel-1 {
+  width: 110px;
+  height: 420px;
+  background: linear-gradient(175deg, #0d382b 0%, #07221a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 
+    0 24px 44px -10px rgba(5, 20, 15, 0.5),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.14);
+  margin-right: -26px;
+  z-index: 1;
+  animation: panelDrift1 8s ease-in-out infinite alternate;
+}
+
+/* --- PANEL 2 (Mid-Left) --- */
+.arch-panel-2 {
+  width: 116px;
+  height: 455px;
+  background: linear-gradient(175deg, #124d3a 0%, #0c3629 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 
+    0 28px 50px -12px rgba(5, 20, 15, 0.48),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.2);
+  margin-right: -26px;
+  z-index: 2;
+  animation: panelDrift2 9.5s ease-in-out 0.8s infinite alternate;
+}
+
+/* --- PANEL 3 (Central Hero Slab) --- */
+.arch-panel-3 {
+  width: 124px;
+  height: 490px;
+  background: linear-gradient(175deg, #176B50 0%, #0f4c39 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 
+    0 34px 60px -14px rgba(6, 26, 19, 0.55),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.3);
+  margin-right: -26px;
+  z-index: 4;
+  transform: translateZ(16px);
+  animation: panelDrift3 7.2s ease-in-out 1.4s infinite alternate;
+}
+
+/* --- PANEL 4 (Foreground Right) --- */
+.arch-panel-4 {
+  width: 112px;
+  height: 435px;
+  background: linear-gradient(175deg, #227b5e 0%, #166047 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 26px 46px -10px rgba(5, 20, 15, 0.42),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.22);
+  z-index: 3;
+  animation: panelDrift4 8.8s ease-in-out 0.4s infinite alternate;
+}
+
+/* Architectural Panel Inner Decors */
+.panel-decor-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.panel-index {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(220, 233, 223, 0.45);
+}
+
+.panel-line-accent {
+  width: 24px;
+  height: 1px;
+  background: rgba(220, 233, 223, 0.25);
+}
+
+.panel-decor-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+.waveform-strip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  opacity: 0.35;
+}
+
+.waveform-bar {
+  width: 2px;
+  background-color: var(--light-green);
+  border-radius: 1px;
+}
+
+/* Central Prominent White Brand Wordmark */
+.central-watermark-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateZ(32px);
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.prominent-wordmark {
+  font-family: var(--font-heading);
+  font-size: clamp(34px, 3.7vw, 48px);
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  text-shadow: 
+    0 4px 18px rgba(4, 18, 13, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  padding-left: 0.26em; /* Optical balance for letter-spacing */
+}
+
+/* --------------------------------------------------------------------------
+   ANNOTATIONS (THREE TINY, LOW-CONTRAST LABELS)
+   -------------------------------------------------------------------------- */
+.annotation-tag {
+  position: absolute;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 56, 43, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 450;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.annotation-tag:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(13, 56, 43, 0.85);
+}
+
+.annotation-tag-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--light-green);
+  opacity: 0.85;
+}
+
+/* Position 1: Top-Left (near panel 1 & 2) */
+.annotation-1 {
+  top: 14%;
+  left: 2%;
+  transform: translateZ(24px);
+}
+
+/* Position 2: Upper-Right (near panel 3 & 4) */
+.annotation-2 {
+  top: 26%;
+  right: 2%;
+  transform: translateZ(28px);
+}
+
+/* Position 3: Bottom-Left (anchored at lower tier) */
+.annotation-3 {
+  bottom: 12%;
+  left: 12%;
+  transform: translateZ(26px);
+}
+
+/* --------------------------------------------------------------------------
+   6. ANIMATIONS
+   -------------------------------------------------------------------------- */
+
+/* Entrance */
+@keyframes panelEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes contentFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slow Ambient Glow Movement */
+@keyframes slowGlowPulse {
+  0% {
+    transform: translate(8%, -48%) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(2%, -42%) scale(1.06);
+    opacity: 0.98;
+  }
+  100% {
+    transform: translate(12%, -52%) scale(0.96);
+    opacity: 0.82;
+  }
+}
+
+/* Micro Drifts on Vertical Panels */
+@keyframes panelDrift1 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes panelDrift2 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(6px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes panelDrift3 {
+  0% { transform: translateZ(16px) translateY(0px); }
+  50% { transform: translateZ(16px) translateY(-6px); }
+  100% { transform: translateZ(16px) translateY(0px); }
+}
+
+@keyframes panelDrift4 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(5px); }
+  100% { transform: translateY(0px); }
+}
+
+/* --------------------------------------------------------------------------
+   7. RESPONSIVE DESIGN BREAKPOINTS
+   -------------------------------------------------------------------------- */
+
+/* Large Tablets & Small Laptops */
+@media (max-width: 1080px) {
+  .main-glass-panel {
+    width: 90vw;
+    height: auto;
+    min-height: 600px;
+  }
+
+  .panel-header {
+    padding: 28px 36px 12px 36px;
+  }
+
+  .panel-body {
+    padding: 12px 36px 36px 36px;
+    gap: 20px;
+  }
+
+  .left-content {
+    padding-right: 20px;
+  }
+
+  .architectural-stage {
+    width: 420px;
+    height: 440px;
+  }
+
+  .arch-panel-1 { width: 95px; height: 380px; margin-right: -22px; }
+  .arch-panel-2 { width: 102px; height: 410px; margin-right: -22px; }
+  .arch-panel-3 { width: 110px; height: 440px; margin-right: -22px; }
+  .arch-panel-4 { width: 98px; height: 395px; }
+
+  .prominent-wordmark {
+    font-size: 32px;
+  }
+}
+
+/* Medium Tablets */
+@media (max-width: 860px) {
+  .welcome-container {
+    padding: 24px 16px;
+  }
+
+  .main-glass-panel {
+    width: 94vw;
+    height: auto;
+    min-height: auto;
+  }
+
+  .panel-body {
+    flex-direction: column;
+    padding: 16px 28px 36px 28px;
+    gap: 40px;
+  }
+
+  .left-content {
+    max-width: 100%;
+    padding-right: 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .content-eyebrow {
+    margin-bottom: 16px;
+  }
+
+  .content-headline {
+    font-size: 36px;
+  }
+
+  .content-description {
+    max-width: 480px;
+    margin-bottom: 28px;
+  }
+
+  .action-wrapper {
+    align-items: center;
+  }
+
+  .right-visual-container {
+    width: 100%;
+    min-height: 380px;
+    margin-top: 10px;
+  }
+
+  .architectural-stage {
+    width: 380px;
+    height: 380px;
+    transform: rotateY(0deg) rotateX(0deg); /* flat for tablets to avoid overflow */
+  }
+
+  .arch-panel-1 { width: 85px; height: 320px; margin-right: -18px; }
+  .arch-panel-2 { width: 90px; height: 345px; margin-right: -18px; }
+  .arch-panel-3 { width: 96px; height: 370px; margin-right: -18px; }
+  .arch-panel-4 { width: 86px; height: 330px; }
+
+  .prominent-wordmark {
+    font-size: 28px;
+    letter-spacing: 0.2em;
+  }
+
+  .annotation-1 { top: 8%; left: -4%; }
+  .annotation-2 { top: 18%; right: -4%; }
+  .annotation-3 { bottom: 6%; left: 4%; }
+}
+
+/* Mobile Devices */
+@media (max-width: 540px) {
+  .welcome-container {
+    padding: 12px 10px;
+  }
+
+  .main-glass-panel {
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  .panel-header {
+    padding: 20px 20px 10px 20px;
+  }
+
+  .brand-name {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+  }
+
+  .panel-nav {
+    gap: 16px;
+  }
+
+  .nav-link {
+    font-size: 12px;
+  }
+
+  .panel-body {
+    padding: 12px 20px 28px 20px;
+    gap: 32px;
+  }
+
+  .content-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    margin-bottom: 14px;
+  }
+
+  .content-headline {
+    font-size: clamp(28px, 8vw, 34px);
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .content-description {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .primary-cta-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 22px;
+    font-size: 14px;
+  }
+
+  .action-caption {
+    font-size: 11.5px;
+  }
+
+  .right-visual-container {
+    min-height: 310px;
+    overflow: hidden;
+  }
+
+  .architectural-stage {
+    width: 310px;
+    height: 300px;
+  }
+
+  .arch-panel-1 { width: 68px; height: 260px; margin-right: -14px; padding: 14px 10px; }
+  .arch-panel-2 { width: 74px; height: 280px; margin-right: -14px; padding: 14px 10px; }
+  .arch-panel-3 { width: 80px; height: 295px; margin-right: -14px; padding: 14px 10px; }
+  .arch-panel-4 { width: 70px; height: 268px; padding: 14px 10px; }
+
+  .prominent-wordmark {
+    font-size: 22px;
+    letter-spacing: 0.18em;
+  }
+
+  .annotation-tag {
+    font-size: 9.5px;
+    padding: 3px 8px;
+  }
+
+  .annotation-1 { top: 4%; left: 0; }
+  .annotation-2 { top: 14%; right: 0; }
+  .annotation-3 { bottom: 4%; left: 4%; }
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VaaniFill API Contract Spec",
+  "description": "Standardized request and response structures agreed upon by Frontend, Backend, and Extension teams.",
+  "version": "1.0.0",
+  "endpoints": {
+    "createGuestSession": {
+      "method": "POST",
+      "path": "/api/guest/session",
+      "description": "Initialize a zero-login guest session",
+      "request": {
+        "body": {
+          "preferredLanguage": "string (e.g. 'en', 'hi', 'as')"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "sessionId": "uuid",
+          "sessionKey": "string",
+          "expiresAt": "ISO8601 string"
+        }
+      }
+    },
+    "uploadDocument": {
+      "method": "POST",
+      "path": "/api/documents/upload",
+      "contentType": "multipart/form-data",
+      "description": "Upload a form image or PDF for OCR and entity extraction",
+      "request": {
+        "formData": {
+          "file": "binary (image/png, image/jpeg, application/pdf)",
+          "language": "string"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "documentId": "uuid",
+          "status": "PROCESSED",
+          "detectedFields": [
+            {
+              "fieldKey": "fullName",
+              "label": "Full Name",
+              "detectedValue": "Ramesh Sharma",
+              "confidence": 0.98,
+              "isMissing": false
+            },
+            {
+              "fieldKey": "age",
+              "label": "Age",
+              "detectedValue": "52",
+              "confidence": 0.95,
+              "isMissing": false
+            },
+            {
+              "fieldKey": "postalCode",
+              "label": "PIN Code",
+              "detectedValue": null,
+              "confidence": 0.0,
+              "isMissing": true
+            }
+          ]
+        }
+      }
+    },
+    "matchFormFields": {
+      "method": "POST",
+      "path": "/api/forms/match",
+      "description": "Match extracted values with user profile or voice responses",
+      "request": {
+        "body": {
+          "documentId": "uuid",
+          "userInputs": "object containing key-value pairs"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "matchedCount": 5,
+          "missingCount": 0,
+          "readyForDownload": true
+        }
+      }
+    }
+  }
+}

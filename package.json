@@ -1,0 +1,22 @@
+{
+  "name": "vaanifill-ai-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace orchestration for VaaniFill AI (Frontend, Backend, Extension)",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "preview:frontend": "npm --prefix frontend run preview",
+    "dev:backend": "npm --prefix backend run dev",
+    "start:backend": "npm --prefix backend start"
+  },
+  "keywords": [
+    "vaanifill",
+    "form-automation",
+    "multilingual",
+    "hackathon"
+  ],
+  "author": "VaaniFill Team",
+  "license": "ISC"
+}

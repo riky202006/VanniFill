@@ -1,0 +1,82 @@
+/* ==========================================================================
+   VAANIFILL AI - GLOBAL DESIGN SYSTEM TOKENS & RESETS
+   ========================================================================== */
+
+:root {
+  /* Brand Color Palette */
+  --bg-page: #F7F7F2;          /* Warm Ivory */
+  --text-main: #202923;        /* Deep Charcoal / Forest Slate */
+  --text-secondary: #737D75;   /* Neutral Forest Gray */
+  --primary-green: #176B50;    /* Signature Forest Green */
+  --primary-green-hover: #125740;
+  --primary-green-active: #0d4331;
+  --light-green: #DCE9DF;      /* Pale Sage Tint */
+  --light-green-translucent: rgba(220, 233, 223, 0.4);
+  --panel-bg: rgba(255, 255, 255, 0.76);
+  --panel-border: rgba(220, 226, 221, 0.8);
+  
+  /* Deep Forest Architectural Shades */
+  --forest-900: #08241b;
+  --forest-800: #0d382b;
+  --forest-700: #13523d;
+  --forest-600: #176B50;
+  --forest-500: #227b5e;
+  --forest-400: #339171;
+  --forest-glow: rgba(23, 107, 80, 0.24);
+
+  /* Typography */
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Elevation & Glassmorphism */
+  --panel-radius: 24px;
+  --card-radius: 20px;
+  --button-radius: 12px;
+  --panel-shadow: 0 30px 60px -20px rgba(18, 54, 42, 0.12),
+                  0 12px 24px -10px rgba(0, 0, 0, 0.03),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  --button-shadow: 0 8px 20px -4px rgba(23, 107, 80, 0.32),
+                   0 2px 6px rgba(23, 107, 80, 0.12);
+  --button-shadow-hover: 0 12px 28px -4px rgba(23, 107, 80, 0.42),
+                         0 4px 8px rgba(23, 107, 80, 0.16);
+
+  /* Transitions */
+  --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 3px;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
