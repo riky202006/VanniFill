@@ -2,7 +2,7 @@ import React from 'react'
 import { ArrowRight } from 'lucide-react'
 import './Welcome.css'
 
-export default function Welcome() {
+export default function Welcome({ onGetStarted }) {
   return (
     <div className="welcome-container">
       {/* 1. Ambient Background Luminous Glows */}
@@ -52,7 +52,10 @@ export default function Welcome() {
                 type="button"
                 className="primary-cta-btn"
                 aria-label="Get Started with VaaniFill AI"
-                onClick={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onGetStarted?.()
+                }}
               >
                 <span>Get Started</span>
                 <ArrowRight className="btn-arrow-icon" aria-hidden="true" />
