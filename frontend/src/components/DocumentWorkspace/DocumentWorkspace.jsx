@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Info,
+  AlertCircle,
 } from 'lucide-react'
 import DocumentUploader from '../DocumentUploader/DocumentUploader'
 import OriginalDocumentPreview from '../OriginalDocumentPreview/OriginalDocumentPreview'
@@ -16,6 +17,60 @@ import DownloadPanel from '../DownloadPanel/DownloadPanel'
 import { analyzeDocument, FIXTURES } from '../../services/documentAnalysisService'
 import { matchFieldsWithProfile } from '../../services/profileMatchingService'
 import './DocumentWorkspace.css'
+
+class WorkspaceErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[WorkspaceErrorBoundary] Caught rendering error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="workspace-card" style={{ textAlign: 'center', padding: '40px 20px', maxWidth: '640px', margin: '30px auto' }}>
+          <AlertCircle style={{ width: '44px', height: '44px', color: '#B91C1C', margin: '0 auto 16px', display: 'block' }} />
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#202923', marginBottom: '8px' }}>
+            There was an issue displaying this step
+          </h2>
+          <p style={{ fontSize: '14px', color: '#737D75', marginBottom: '24px', lineHeight: 1.5 }}>
+            Your uploaded document and completed entries are safely preserved in this session.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="editor-proceed-btn"
+              onClick={() => {
+                this.setState({ hasError: false, error: null })
+                this.props.onResetToStage?.(2)
+              }}
+            >
+              <span>Back to Form Editor</span>
+            </button>
+            <button
+              type="button"
+              className="editor-back-upload-btn"
+              onClick={() => {
+                this.setState({ hasError: false, error: null })
+                this.props.onResetToStage?.(1)
+              }}
+            >
+              <span>Upload New Form</span>
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 export default function DocumentWorkspace({
   currentUser = null,
@@ -99,8 +154,8 @@ export default function DocumentWorkspace({
     setIsProcessing(true)
     setProcessingStatus('reading')
 
-    setTimeout(() => setProcessingStatus('detecting'), 700)
-    setTimeout(() => setProcessingStatus('preparing'), 1400)
+    const t1 = setTimeout(() => setProcessingStatus('detecting'), 500)
+    const t2 = setTimeout(() => setProcessingStatus('preparing'), 1100)
 
     try {
       const result = await analyzeDocument({
@@ -110,19 +165,21 @@ export default function DocumentWorkspace({
         selectedFixtureId,
       })
 
-      setTimeout(() => {
-        if (!result.connected && !result.isFixture) {
-          // Honest unconnected state (no fake claims)
-          setProcessingStatus('unconnected')
-        } else {
-          // Successfully loaded detected fields from backend or test fixture
-          applyAnalysisResult(result)
-          setIsProcessing(false)
-          setCurrentStage(2)
-        }
-      }, 300)
-    } catch {
-      setTimeout(() => setProcessingStatus('unconnected'), 300)
+      clearTimeout(t1)
+      clearTimeout(t2)
+
+      if (result.connected || result.isFixture) {
+        applyAnalysisResult(result)
+        setIsProcessing(false)
+        setCurrentStage(2)
+      } else {
+        setProcessingStatus('unconnected')
+      }
+    } catch (err) {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      console.error('[DocumentWorkspace] Analysis error:', err)
+      setProcessingStatus('unconnected')
     }
   }
 
@@ -408,10 +465,13 @@ export default function DocumentWorkspace({
       {/* Processing State Animation & Fallbacks */}
       {currentStage === 1 && isProcessing && (
         <DocumentProcessingStatus
-          status={processingStatus}
-          fileName={selectedFile?.name || 'document.pdf'}
-          onSelectFixture={handleProceedWithFixture}
-          onBackToUpload={() => setIsProcessing(false)}
+          statusStep={processingStatus}
+          fileName={selectedFile?.name || (selectedFixtureId ? FIXTURES[selectedFixtureId]?.title : 'document.pdf')}
+          onProceedWithFixture={handleProceedWithFixture}
+          onBackToUpload={() => {
+            setIsProcessing(false)
+            setProcessingStatus('reading')
+          }}
         />
       )}
 
@@ -423,9 +483,7 @@ export default function DocumentWorkspace({
           {/* Left Column: Side-by-side Original Document Preview */}
           <aside className="workspace-left-column">
             <OriginalDocumentPreview
-              fileUrl={selectedFile?.previewUrl}
-              fileName={documentMetadata?.fileName || 'Original Document'}
-              fields={detectedFields}
+              fileData={selectedFile}
               activeField={activeField}
               isOpenOnMobile={isMobilePreviewOpen}
               onToggleMobileOpen={() => setIsMobilePreviewOpen(!isMobilePreviewOpen)}
@@ -494,38 +552,42 @@ export default function DocumentWorkspace({
           STAGE 3: COMPREHENSIVE FORM REVIEW
           -------------------------------------------------------------------- */}
       {currentStage === 3 && (
-        <FormReview
-          fields={detectedFields}
-          fieldValues={fieldValues}
-          fieldSources={fieldSources}
-          fieldStatuses={fieldStatuses}
-          formTitle={documentMetadata?.formTitle}
-          fileName={documentMetadata?.fileName}
-          isFixture={isFixtureData}
-          onEditField={(fieldId) => {
-            setActiveFieldId(fieldId)
-            setCurrentStage(2)
-          }}
-          onBackToEditor={() => setCurrentStage(2)}
-          onBackToEdit={() => setCurrentStage(2)}
-          onProceedToDownload={() => setCurrentStage(4)}
-        />
+        <WorkspaceErrorBoundary onResetToStage={(stage) => setCurrentStage(stage)}>
+          <FormReview
+            fields={detectedFields}
+            fieldValues={fieldValues}
+            fieldSources={fieldSources}
+            fieldStatuses={fieldStatuses}
+            formTitle={documentMetadata?.formTitle}
+            fileName={documentMetadata?.fileName}
+            isFixture={isFixtureData}
+            onEditField={(fieldId) => {
+              setActiveFieldId(fieldId)
+              setCurrentStage(2)
+            }}
+            onBackToEditor={() => setCurrentStage(2)}
+            onBackToEdit={() => setCurrentStage(2)}
+            onProceedToDownload={() => setCurrentStage(4)}
+          />
+        </WorkspaceErrorBoundary>
       )}
 
       {/* --------------------------------------------------------------------
           STAGE 4: OFFICIAL FORM EXPORT & DOWNLOAD
           -------------------------------------------------------------------- */}
       {currentStage === 4 && (
-        <DownloadPanel
-          documentId={documentMetadata?.documentId}
-          fileName={documentMetadata?.fileName}
-          formTitle={documentMetadata?.formTitle}
-          fields={detectedFields}
-          fieldValues={fieldValues}
-          isFixture={isFixtureData}
-          onBackToReview={() => setCurrentStage(3)}
-          onStartNewForm={handleStartNewForm}
-        />
+        <WorkspaceErrorBoundary onResetToStage={(stage) => setCurrentStage(stage)}>
+          <DownloadPanel
+            documentId={documentMetadata?.documentId}
+            fileName={documentMetadata?.fileName}
+            formTitle={documentMetadata?.formTitle}
+            fields={detectedFields}
+            fieldValues={fieldValues}
+            isFixture={isFixtureData}
+            onBackToReview={() => setCurrentStage(3)}
+            onStartNewForm={handleStartNewForm}
+          />
+        </WorkspaceErrorBoundary>
       )}
     </div>
   )

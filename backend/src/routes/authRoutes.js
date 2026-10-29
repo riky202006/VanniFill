@@ -260,11 +260,20 @@ userRouter.get('/profile', async (req, res) => {
     user = await findUserByEmail('demo@vaanifill.ai')
   }
 
+  if (!user) {
+    return res.status(200).json({
+      id: 'guest',
+      name: 'Guest User',
+      email: '',
+      profile: {},
+    })
+  }
+
   res.status(200).json({
     id: user.id,
     name: user.name,
     email: user.email,
-    profile: user.profile,
+    profile: user.profile || {},
   })
 })
 
@@ -282,10 +291,11 @@ userRouter.put('/profile', async (req, res) => {
 
   let user = await findUserByEmail(targetEmail)
   if (!user) {
-    user = users.get('demo@vaanifill.ai')
+    user = users.get('demo@vaanifill.ai') || { profile: {} }
   }
 
-  const updatedProfile = { ...user.profile, ...(req.body || {}) }
+  const currentProfile = user.toObject ? user.toObject().profile : user.profile
+  const updatedProfile = { ...(currentProfile || {}), ...(req.body || {}) }
 
   if (isMongoConnected()) {
     try {

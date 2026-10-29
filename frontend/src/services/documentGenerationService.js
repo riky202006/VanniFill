@@ -86,7 +86,8 @@ export function downloadFieldsSummary({ originalFileName, formTitle, fields = []
       ? '[Entered by User]'
       : '[Unfilled]'
 
-    lines.push(`${idx + 1}. ${f.label.padEnd(35)}: ${valStr} ${sourceTag}`)
+    const labelStr = (typeof f?.label === 'string' && f.label.trim() ? f.label : (f?.id || `Field ${idx + 1}`)).padEnd(35)
+    lines.push(`${idx + 1}. ${labelStr}: ${valStr} ${sourceTag}`)
   })
 
   lines.push('')

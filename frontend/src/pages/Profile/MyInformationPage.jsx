@@ -20,6 +20,7 @@ import {
   Info,
   Check,
   X,
+  ArrowLeft,
 } from 'lucide-react'
 import {
   createEmptyProfile,
@@ -38,7 +39,7 @@ import {
 } from '../../constants/indianFormOptions'
 import './MyInformationPage.css'
 
-export default function MyInformationPage({ onProfileUpdated }) {
+export default function MyInformationPage({ currentUser = null, onProfileUpdated = null, onNavigate = null }) {
   // Working draft profile
   const [profile, setProfile] = useState(createEmptyProfile())
   // Clean baseline profile for change tracking and cancel
@@ -108,7 +109,7 @@ export default function MyInformationPage({ onProfileUpdated }) {
 
     loadData()
     return () => { isMounted = false }
-  }, [])
+  }, [currentUser?.email])
 
 
 
@@ -263,14 +264,16 @@ export default function MyInformationPage({ onProfileUpdated }) {
     try {
       const res = await updateProfile(profile)
       if (res.success) {
-        setInitialProfile(res.profile || profile)
+        const savedProfile = res.profile || profile
+        setProfile(savedProfile)
+        setInitialProfile(savedProfile)
         setBackendConnected(res.connected)
         setFeedback({
           type: 'success',
           message: res.message || 'Personal information saved successfully.',
           errors: {},
         })
-        onProfileUpdated?.(res.profile || profile)
+        onProfileUpdated?.(savedProfile)
       } else {
         setFeedback({
           type: 'error',
@@ -366,6 +369,18 @@ export default function MyInformationPage({ onProfileUpdated }) {
 
           {/* Quick Actions & Fixture Loader */}
           <div className="header-actions-row">
+            {onNavigate && (
+              <button
+                type="button"
+                className="fixture-loader-btn"
+                onClick={() => onNavigate('home')}
+                title="Return to document workspace to fill forms"
+              >
+                <ArrowLeft className="btn-icon-xs" />
+                <span>Fill Document / Workspace</span>
+              </button>
+            )}
+
             <button
               type="button"
               className="fixture-loader-btn"

@@ -10,11 +10,10 @@ export default function OriginalDocumentPreview({
 }) {
   const [zoomLevel, setZoomLevel] = useState(100)
 
-  if (!fileData) {
-    return null
-  }
-
-  const { isPDF, isImage, previewUrl, name, size } = fileData
+  const isPDF = fileData?.isPDF || false
+  const isImage = fileData?.isImage || false
+  const previewUrl = fileData?.previewUrl || null
+  const name = fileData?.name || 'Application Form'
   const activeBox = activeField?.boundingBox
 
   return (
@@ -102,8 +101,12 @@ export default function OriginalDocumentPreview({
           )}
 
           {!previewUrl && (
-            <div className="preview-fallback-notice">
-              <p>Preview rendering not supported for this file type in this browser.</p>
+            <div className="preview-fallback-notice" style={{ padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <FileText style={{ width: '42px', height: '42px', color: '#176B50', marginBottom: '12px', opacity: 0.8 }} />
+              <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#202923', marginBottom: '6px' }}>{name}</h4>
+              <p style={{ fontSize: '13px', color: '#737D75', maxWidth: '320px', lineHeight: 1.5 }}>
+                Form fields derived from your document. Focus or edit any field on the right to review.
+              </p>
             </div>
           )}
         </div>

@@ -12,19 +12,13 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     profile: {
-      fullName: { type: String, default: '' },
-      mobile: { type: String, default: null },
-      email: { type: String, default: '' },
-      dob: { type: String, default: null },
-      gender: { type: String, default: null },
-      category: { type: String, default: null },
-      state: { type: String, default: null },
-      postalCode: { type: String, default: null },
-      annualIncome: { type: String, default: null },
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
   },
   {
     timestamps: true,
+    strict: false,
   }
 )
 

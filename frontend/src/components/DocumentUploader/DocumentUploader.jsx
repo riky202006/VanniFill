@@ -27,6 +27,7 @@ export default function DocumentUploader({
   const [isDragging, setIsDragging] = useState(false)
   const [validationError, setValidationError] = useState(null)
   const fileInputRef = useRef(null)
+  const dragCounter = useRef(0)
 
   const formatSize = (bytes) => {
     if (!bytes) return ''
@@ -40,9 +41,10 @@ export default function DocumentUploader({
     if (!file) return
 
     const lowerName = file.name.toLowerCase()
-    const isValidExtension = ACCEPTED_EXTENSIONS.some((ext) => lowerName.endsWith(ext))
+    const isPDF = lowerName.endsWith('.pdf') || (file.type && file.type.includes('pdf'))
+    const isImage = /\.(png|jpe?g|webp)$/i.test(lowerName) || (file.type && file.type.startsWith('image/'))
 
-    if (!isValidExtension && !file.type.includes('pdf') && !file.type.includes('image')) {
+    if (!isPDF && !isImage) {
       setValidationError('Unsupported format. Please select a PDF, PNG, JPG, or JPEG file.')
       return
     }
@@ -52,27 +54,81 @@ export default function DocumentUploader({
       return
     }
 
-    const previewUrl = file.type.startsWith('image/') || file.type.includes('pdf')
-      ? URL.createObjectURL(file)
-      : null
+    // Revoke previous object URL if any
+    if (selectedFile?.previewUrl) {
+      try {
+        URL.revokeObjectURL(selectedFile.previewUrl)
+      } catch {}
+    }
+
+    let previewUrl = null
+    try {
+      previewUrl = URL.createObjectURL(file)
+    } catch (err) {
+      console.warn('Could not create preview URL for file:', err)
+    }
 
     onFileSelect({
       file,
       name: file.name,
       size: formatSize(file.size),
       sizeBytes: file.size,
-      type: file.type || (lowerName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+      type: file.type || (isPDF ? 'application/pdf' : 'image/jpeg'),
       previewUrl,
-      isPDF: lowerName.endsWith('.pdf') || file.type.includes('pdf'),
-      isImage: file.type.startsWith('image/'),
+      isPDF,
+      isImage,
     })
+  }
+
+  const handleDragEnter = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current += 1
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current -= 1
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0
+      setIsDragging(false)
+    }
   }
 
   const handleDrop = (e) => {
     e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current = 0
     setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) handleValidateAndSelect(file)
+    if (file) {
+      handleValidateAndSelect(file)
+    }
+  }
+
+  const openFilePicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleRemove = (e) => {
+    e?.stopPropagation()
+    setValidationError(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    onRemoveFile()
   }
 
   return (
@@ -87,16 +143,11 @@ export default function DocumentUploader({
       {/* Main Drag & Drop / Tap Target Zone */}
       <div
         className={`uploader-dropzone ${isDragging ? 'dropzone-active' : ''} ${selectedFile ? 'dropzone-filled' : ''}`}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragging(true)
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault()
-          setIsDragging(false)
-        }}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => !selectedFile && fileInputRef.current?.click()}
+        onClick={() => !selectedFile && openFilePicker()}
       >
         <input
           ref={fileInputRef}
@@ -125,7 +176,7 @@ export default function DocumentUploader({
               className="dropzone-browse-button"
               onClick={(e) => {
                 e.stopPropagation()
-                fileInputRef.current?.click()
+                openFilePicker()
               }}
             >
               Browse Files
@@ -148,7 +199,7 @@ export default function DocumentUploader({
                   title="Replace with another file"
                   onClick={(e) => {
                     e.stopPropagation()
-                    fileInputRef.current?.click()
+                    openFilePicker()
                   }}
                 >
                   <RefreshCw className="action-icon-xs" />
@@ -158,10 +209,7 @@ export default function DocumentUploader({
                   type="button"
                   className="doc-action-btn remove-action"
                   title="Remove this file"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRemoveFile()
-                  }}
+                  onClick={handleRemove}
                 >
                   <Trash2 className="action-icon-xs" />
                   <span>Remove</span>
@@ -176,10 +224,19 @@ export default function DocumentUploader({
               </div>
             )}
 
-            {selectedFile.isPDF && (
-              <div className="doc-pdf-status-banner">
-                <CheckCircle2 className="pdf-check-icon" />
-                <span>PDF loaded. You will be able to view pages side-by-side during filling.</span>
+            {selectedFile.isPDF && selectedFile.previewUrl && (
+              <div className="doc-pdf-preview-box">
+                <div className="doc-pdf-status-banner">
+                  <CheckCircle2 className="pdf-check-icon" />
+                  <span>PDF Document ready for field detection</span>
+                </div>
+                <div className="doc-pdf-mini-embed">
+                  <iframe
+                    src={`${selectedFile.previewUrl}#toolbar=0&navpanes=0`}
+                    title="PDF Document Preview"
+                    className="doc-pdf-iframe"
+                  />
+                </div>
               </div>
             )}
           </div>

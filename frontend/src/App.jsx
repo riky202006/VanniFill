@@ -22,9 +22,10 @@ export default function App() {
   // User Profile Data (retrieved from service layer)
   const [userProfile, setUserProfile] = useState(null)
 
-  // Lightweight hash-aware view router ('welcome' | 'guest' | 'home' | 'my-information' | 'settings')
+  // Lightweight hash-aware view router ('welcome' | 'guest' | 'home' | 'my-information' | 'submissions' | 'settings')
   const [currentView, setCurrentView] = useState(() => {
-    const hash = window.location.hash.replace(/^#\/?/, '')
+    const rawHash = window.location.hash.replace(/^#\/?/, '')
+    const hash = rawHash === 'workspace' ? (localStorage.getItem('vaanifill_user') ? 'home' : 'guest') : rawHash
     if (['welcome', 'guest', 'home', 'my-information', 'submissions', 'settings'].includes(hash)) {
       return hash
     }
@@ -40,7 +41,8 @@ export default function App() {
   // Synchronize hash with window history
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace(/^#\/?/, '')
+      const rawHash = window.location.hash.replace(/^#\/?/, '')
+      const hash = rawHash === 'workspace' ? (localStorage.getItem('vaanifill_user') ? 'home' : 'guest') : rawHash
       if (['welcome', 'guest', 'home', 'my-information', 'submissions', 'settings'].includes(hash)) {
         setCurrentView(hash)
       }
@@ -156,6 +158,7 @@ export default function App() {
         <MyInformationPage
           currentUser={currentUser}
           onProfileUpdated={(updated) => setUserProfile(updated)}
+          onNavigate={navigateTo}
         />
       )}
 

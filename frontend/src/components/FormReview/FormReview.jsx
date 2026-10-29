@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Info,
+  CheckCircle2,
+  FileText,
 } from 'lucide-react'
 import './FormReview.css'
 
@@ -16,24 +18,64 @@ export default function FormReview({
   formTitle = '',
   fileName = '',
   isFixture = false,
-  onEditField = () => {},
-  onBackToEditor = () => {},
-  onBackToEdit = () => {},
-  onProceedToDownload = () => {},
+  onEditField = null,
+  onBackToEditor = null,
+  onBackToEdit = null,
+  onProceedToDownload = null,
 }) {
+  const handleBack = () => {
+    if (typeof onBackToEditor === 'function') {
+      onBackToEditor()
+    } else if (typeof onBackToEdit === 'function') {
+      onBackToEdit()
+    }
+  }
+
+  const handleEdit = (fieldId) => {
+    if (typeof onEditField === 'function') {
+      onEditField(fieldId)
+    } else {
+      handleBack()
+    }
+  }
+
+  const getFieldLabel = (field) => {
+    if (!field) return 'Field'
+    if (typeof field.label === 'string' && field.label.trim()) return field.label
+    if (typeof field.fieldKey === 'string' && field.fieldKey.trim()) return field.fieldKey
+    if (typeof field.id === 'string' && field.id.trim()) return field.id
+    return 'Unnamed Field'
+  }
+
+  const getShortLabel = (field) => {
+    const lbl = getFieldLabel(field)
+    return lbl.split('/')[0].trim() || lbl
+  }
+
+  const getFormattedValue = (raw) => {
+    if (raw === null || raw === undefined) return ''
+    if (typeof raw === 'boolean') return raw ? 'Yes' : 'No'
+    if (typeof raw === 'object') {
+      if (raw.value !== undefined) return String(raw.value)
+      return JSON.stringify(raw)
+    }
+    return String(raw)
+  }
+
   const safeFields = Array.isArray(fields) ? fields : []
 
   const filledCount = safeFields.filter((f) => {
-    const val = fieldValues[f.id] ?? f.userValue ?? f.detectedValue
-    return val !== null && val !== undefined && String(val).trim() !== ''
+    if (!f) return false
+    const rawVal = fieldValues?.[f.id] ?? f.userValue ?? f.detectedValue
+    return getFormattedValue(rawVal).trim() !== ''
   }).length
 
   const missingRequired = safeFields.filter((f) => {
-    const val = fieldValues[f.id] ?? f.userValue ?? f.detectedValue
-    return f.required && (!val || String(val).trim() === '')
+    if (!f || !f.required) return false
+    const rawVal = fieldValues?.[f.id] ?? f.userValue ?? f.detectedValue
+    return getFormattedValue(rawVal).trim() === ''
   })
 
-  const handleBack = onBackToEditor || onBackToEdit
   const handleProceed = onProceedToDownload
 
   return (
@@ -45,6 +87,7 @@ export default function FormReview({
             {formTitle ? `Review: ${formTitle}` : 'Review Detected Form Data'}
           </h2>
           <p className="review-subtitle">
+            {fileName ? `Document: ${fileName} • ` : ''}
             Inspect all completed values before generating your final summary. Every value corresponds to your actual document schema.
           </p>
         </div>
@@ -70,75 +113,93 @@ export default function FormReview({
           <AlertCircle className="warning-icon" aria-hidden="true" />
           <div>
             <strong>{missingRequired.length} required field(s) are currently empty:</strong>
-            <p>
-              {missingRequired.map((f) => String(f.label || f.id || 'Field').split('/')[0].trim()).join(', ')}
-            </p>
+            <p>{missingRequired.map((f) => getShortLabel(f)).join(', ')}</p>
           </div>
         </div>
       )}
 
-      {/* Review Table / List of Actual Fields */}
-      <div className="review-fields-table">
-        {safeFields.map((field, idx) => {
-          const val = fieldValues[field.id] ?? field.userValue ?? field.detectedValue
-          const hasValue = val !== null && val !== undefined && String(val).trim() !== ''
-          const source = fieldSources[field.id] || (hasValue ? 'user_entered' : 'empty')
-          const status = fieldStatuses[field.id] || (hasValue ? 'ready' : (field.required ? 'missing' : 'ready'))
-          const displayLabel = field.label || field.id || `Field ${idx + 1}`
+      {/* Empty State */}
+      {safeFields.length === 0 ? (
+        <div className="review-empty-state">
+          <FileText className="empty-icon-lg" aria-hidden="true" />
+          <h3>No Form Fields to Review</h3>
+          <p>We could not find any detected form fields for this document.</p>
+          <button
+            type="button"
+            className="review-back-btn"
+            onClick={handleBack}
+          >
+            <ArrowLeft className="btn-icon-xs" />
+            <span>Back to Form Editor</span>
+          </button>
+        </div>
+      ) : (
+        /* Review Table / List of Actual Fields */
+        <div className="review-fields-table">
+          {safeFields.map((field, idx) => {
+            if (!field) return null
+            const fieldId = field.id || `field_${idx}`
+            const rawVal = fieldValues?.[fieldId] ?? field.userValue ?? field.detectedValue
+            const formattedVal = getFormattedValue(rawVal)
+            const hasValue = formattedVal.trim() !== ''
+            const source = fieldSources?.[fieldId] || (hasValue ? 'user_entered' : 'empty')
+            const status = fieldStatuses?.[fieldId] || (hasValue ? 'ready' : (field.required ? 'missing' : 'ready'))
+            const label = getFieldLabel(field)
 
-          return (
-            <div key={field.id || `field_${idx}`} className="review-field-row">
-              <div className="review-col-meta">
-                <span className="row-index">{idx + 1}</span>
-                <div className="label-with-tags">
-                  <span className="field-label-text">
-                    {displayLabel}
-                    {field.required && <span className="req-marker">*</span>}
-                  </span>
-                  <div className="pill-tags-row">
-                    {source === 'saved_profile' && (
-                      <span className="source-tag tag-profile">Saved Profile</span>
-                    )}
-                    {source === 'found_in_document' && (
-                      <span className="source-tag tag-ocr">Found in document</span>
-                    )}
-                    {source === 'user_entered' && (
-                      <span className="source-tag tag-user">User entered</span>
-                    )}
-                    {source === 'suggested' && (
-                      <span className="source-tag tag-suggested">Suggested</span>
-                    )}
-                    {status === 'missing' && (
-                      <span className="status-tag tag-missing">Missing</span>
-                    )}
-                    {status === 'uncertain' && (
-                      <span className="status-tag tag-uncertain">Uncertain</span>
-                    )}
+            return (
+              <div key={fieldId} className="review-field-row">
+                <div className="review-col-meta">
+                  <span className="row-index">{idx + 1}</span>
+                  <div className="label-with-tags">
+                    <span className="field-label-text">
+                      {label}
+                      {field.required && <span className="req-marker">*</span>}
+                    </span>
+                    <div className="pill-tags-row">
+                      {source === 'saved_profile' && (
+                        <span className="source-tag tag-profile">Saved Profile</span>
+                      )}
+                      {source === 'found_in_document' && (
+                        <span className="source-tag tag-ocr">Found in document</span>
+                      )}
+                      {source === 'user_entered' && (
+                        <span className="source-tag tag-user">User entered</span>
+                      )}
+                      {source === 'suggested' && (
+                        <span className="source-tag tag-suggested">Suggested</span>
+                      )}
+                      {status === 'missing' && (
+                        <span className="status-tag tag-missing">Missing</span>
+                      )}
+                      {status === 'uncertain' && (
+                        <span className="status-tag tag-uncertain">Uncertain</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="review-col-value">
-                <span className={`value-display ${hasValue ? '' : 'value-empty'}`}>
-                  {hasValue ? String(val) : '— (Empty)'}
-                </span>
-              </div>
+                <div className="review-col-value">
+                  <span className={`value-display ${hasValue ? '' : 'value-empty'}`}>
+                    {hasValue ? formattedVal : '— (Empty)'}
+                  </span>
+                </div>
 
-              <div className="review-col-action">
-                <button
-                  type="button"
-                  className="edit-field-link"
-                  onClick={() => onEditField(field.id)}
-                  title={`Edit ${displayLabel}`}
-                >
-                  <Edit2 className="edit-icon-xs" />
-                  <span>Edit</span>
-                </button>
+                <div className="review-col-action">
+                  <button
+                    type="button"
+                    className="edit-field-link"
+                    onClick={() => handleEdit(fieldId)}
+                    title={`Edit ${label}`}
+                  >
+                    <Edit2 className="edit-icon-xs" />
+                    <span>Edit</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Bottom Nav Bar */}
       <div className="review-nav-bar">

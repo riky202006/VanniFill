@@ -337,3 +337,39 @@
     width: 100%;
   }
 }
+
+/* Empty State */
+.review-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background-color: #FAFAF7;
+  border-radius: 12px;
+  border: 1px dashed #E5E8E1;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-empty-state .empty-icon-lg {
+  width: 40px;
+  height: 40px;
+  color: #176B50;
+  opacity: 0.7;
+}
+
+.review-empty-state h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #202923;
+  margin: 0;
+}
+
+.review-empty-state p {
+  font-size: 13.5px;
+  color: #737D75;
+  margin: 0 0 12px 0;
+  max-width: 360px;
+}
+

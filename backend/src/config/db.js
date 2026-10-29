@@ -5,6 +5,14 @@
  */
 
 import mongoose from 'mongoose'
+import dns from 'node:dns'
+
+// Ensure Node.js can resolve MongoDB Atlas SRV records even if local Wi-Fi router blocks them
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1'])
+} catch (e) {
+  // Use default resolver if custom servers cannot be set
+}
 
 let isConnected = false
 
