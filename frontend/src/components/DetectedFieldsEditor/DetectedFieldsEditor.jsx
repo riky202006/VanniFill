@@ -1,12 +1,13 @@
 import React from 'react'
 import {
-  CheckCircle2,
   AlertCircle,
   HelpCircle,
   Sparkles,
-  Info,
   Check,
   X,
+  Edit2,
+  RotateCcw,
+  UserCheck,
   FileText,
 } from 'lucide-react'
 import './DetectedFieldsEditor.css'
@@ -22,7 +23,10 @@ export default function DetectedFieldsEditor({
   onFieldValueChange,
   onConfirmSuggestion,
   onRejectSuggestion,
-  isFixture = false,
+  onApplyAllSuggestions,
+  onDismissAllSuggestions,
+  onRemoveAppliedValue,
+  isFixture: _isFixture = false,
   formTitle = '',
   highlightMissing = false,
 }) {
@@ -37,16 +41,48 @@ export default function DetectedFieldsEditor({
 
   const getSourcePill = (source) => {
     switch (source) {
+      case 'saved_profile':
+        return (
+          <span className="source-pill source-profile" title="Matched from My Information">
+            <UserCheck className="pill-icon-xs" />
+            Saved Profile
+          </span>
+        )
       case 'found_in_document':
-        return <span className="source-pill source-doc" title="Pre-extracted from your document OCR">Found in document</span>
+        return (
+          <span className="source-pill source-doc" title="Pre-extracted from document OCR">
+            <FileText className="pill-icon-xs" />
+            Document Extracted
+          </span>
+        )
+      case 'suggested_match':
+        return (
+          <span className="source-pill source-suggested" title="Suggested from profile (pending confirmation)">
+            <Sparkles className="pill-icon-xs" />
+            Suggested Match
+          </span>
+        )
+      case 'user_confirmed':
+        return (
+          <span className="source-pill source-confirmed" title="Confirmed by user">
+            <Check className="pill-icon-xs" />
+            User Confirmed
+          </span>
+        )
       case 'user_entered':
-        return <span className="source-pill source-user" title="Entered or edited by you">User entered</span>
-      case 'suggested':
-        return <span className="source-pill source-suggested" title="Suggested by assistant (requires confirmation)">Suggested</span>
+        return (
+          <span className="source-pill source-user" title="Entered or edited by you">
+            User Entered
+          </span>
+        )
       default:
         return null
     }
   }
+
+  // Count high-confidence suggestions
+  const suggestionKeys = Object.keys(suggestedValues || {})
+  const pendingSuggestionsCount = suggestionKeys.length
 
   return (
     <div className="detected-fields-editor-root">
@@ -64,20 +100,68 @@ export default function DetectedFieldsEditor({
         </div>
       </div>
 
+      {/* Review Suggestions Banner (Batch confirmation for high-confidence profile matches) */}
+      {pendingSuggestionsCount > 0 && (
+        <div className="batch-suggestions-banner" role="region" aria-label="Review Profile Suggestions">
+          <div className="banner-left">
+            <div className="banner-sparkle-circle">
+              <Sparkles className="banner-sparkle-icon" />
+            </div>
+            <div>
+              <h4 className="banner-title">
+                {pendingSuggestionsCount} {pendingSuggestionsCount === 1 ? 'Field Match' : 'Field Matches'} from My Information
+              </h4>
+              <p className="banner-desc">
+                Review suggested values below. You remain in control and can accept, edit, or ignore any suggestion.
+              </p>
+            </div>
+          </div>
+
+          <div className="banner-actions">
+            {onApplyAllSuggestions && (
+              <button
+                type="button"
+                className="banner-apply-all-btn"
+                onClick={onApplyAllSuggestions}
+                title="Confirm all high-confidence profile matches"
+              >
+                <Check className="btn-icon-xs" />
+                <span>Apply All Matches ({pendingSuggestionsCount})</span>
+              </button>
+            )}
+
+            {onDismissAllSuggestions && (
+              <button
+                type="button"
+                className="banner-dismiss-all-btn"
+                onClick={onDismissAllSuggestions}
+                title="Dismiss all suggestions and enter manually"
+              >
+                <span>Ignore All</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Fields List */}
       <div className="dynamic-fields-stack">
         {fields.map((field) => {
           const currentValue = fieldValues[field.id] ?? ''
-          const suggestion = suggestedValues[field.id]
+          const suggestionObj = suggestedValues[field.id]
+          const suggestionValue = typeof suggestionObj === 'object' ? suggestionObj.value : suggestionObj
+          const suggestionMeta = typeof suggestionObj === 'object' ? suggestionObj : null
+
           const source = fieldSources[field.id] || (currentValue ? 'user_entered' : 'empty')
           const status = fieldStatuses[field.id] || (currentValue ? 'ready' : (field.required ? 'missing' : 'ready'))
           const isFocused = activeFieldId === field.id
           const isMissingHighlight = highlightMissing && status === 'missing'
+          const isFromProfile = source === 'saved_profile'
 
           return (
             <div
               key={field.id}
-              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''}`}
+              className={`field-row-card ${isFocused ? 'field-card-focused' : ''} ${isMissingHighlight ? 'field-card-missing-alert' : ''} ${isFromProfile ? 'field-card-profile-matched' : ''}`}
               onClick={() => onFieldFocus(field.id)}
             >
               {/* Field Label & Metadata Bar */}
@@ -100,6 +184,22 @@ export default function DetectedFieldsEditor({
                     {status === 'uncertain' && <HelpCircle className="badge-icon-xs" />}
                     <span>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                   </span>
+
+                  {/* Remove applied value action */}
+                  {isFromProfile && onRemoveAppliedValue && (
+                    <button
+                      type="button"
+                      className="remove-applied-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onRemoveAppliedValue(field.id)
+                      }}
+                      title="Clear applied profile value"
+                    >
+                      <RotateCcw className="btn-icon-xxs" />
+                      <span>Clear</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -146,7 +246,7 @@ export default function DetectedFieldsEditor({
                     <span>{field.description || 'Confirm this condition'}</span>
                   </label>
                 ) : (
-                  /* 4. STANDARD INPUTS (text, date, number, email, tel, unknown) */
+                  /* 4. STANDARD INPUTS */
                   <input
                     id={`input-${field.id}`}
                     type={
@@ -169,43 +269,78 @@ export default function DetectedFieldsEditor({
                 )}
               </div>
 
-              {/* Suggested Value Notification & Explicit Confirmation */}
-              {suggestion && (
-                <div className="suggestion-confirmation-bar">
-                  <div className="suggestion-text">
-                    <Sparkles className="suggestion-sparkle-icon" />
-                    <span>Suggested value: <strong>"{suggestion}"</strong></span>
+              {/* Form Matching Suggestion Card with 3 Buttons: Use This Value, Edit, Ignore */}
+              {suggestionValue && (
+                <div className="suggestion-confirmation-bar" role="region" aria-label="Suggested field value">
+                  <div className="suggestion-left">
+                    <div className="suggestion-text">
+                      <Sparkles className="suggestion-sparkle-icon" aria-hidden="true" />
+                      <span className="suggestion-value-text">
+                        Suggested value: <strong>"{suggestionValue}"</strong>
+                      </span>
+                    </div>
+
+                    <div className="suggestion-meta-row">
+                      <span className="suggestion-source-tag">
+                        Source: {suggestionMeta?.sourceCategory || 'My Information'}
+                        {suggestionMeta?.sourceLabel ? ` (${suggestionMeta.sourceLabel})` : ''}
+                      </span>
+                      {suggestionMeta?.confidence && (
+                        <span className={`confidence-pill confidence-${suggestionMeta.confidence}`}>
+                          {suggestionMeta.confidence === 'high' ? 'High Confidence' : 'Review Match'}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
                   <div className="suggestion-action-buttons">
+                    {/* Button 1: Use This Value */}
                     <button
                       type="button"
                       className="suggestion-confirm-btn"
-                      title="Accept suggested value"
+                      title="Use this suggested value"
                       onClick={(e) => {
                         e.stopPropagation()
-                        onConfirmSuggestion(field.id, suggestion)
+                        onConfirmSuggestion(field.id, suggestionValue)
                       }}
                     >
                       <Check className="action-icon-xs" />
-                      <span>Confirm</span>
+                      <span>Use This Value</span>
                     </button>
+
+                    {/* Button 2: Edit */}
+                    <button
+                      type="button"
+                      className="suggestion-edit-btn"
+                      title="Edit this suggested value"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onFieldValueChange(field.id, suggestionValue)
+                        onFieldFocus(field.id)
+                      }}
+                    >
+                      <Edit2 className="action-icon-xs" />
+                      <span>Edit</span>
+                    </button>
+
+                    {/* Button 3: Ignore */}
                     <button
                       type="button"
                       className="suggestion-reject-btn"
-                      title="Reject suggested value"
+                      title="Ignore this suggestion"
                       onClick={(e) => {
                         e.stopPropagation()
                         onRejectSuggestion(field.id)
                       }}
                     >
                       <X className="action-icon-xs" />
-                      <span>Reject</span>
+                      <span>Ignore</span>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Field Description or OCR Confidence note */}
+              {/* Field Description */}
               {field.description && (
                 <p className="field-hint-text">{field.description}</p>
               )}

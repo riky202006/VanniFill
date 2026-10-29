@@ -1,0 +1,300 @@
+/* ==========================================================================
+   VAANIFILL AI - SHARED DOCUMENT WORKSPACE STYLES
+   ========================================================================== */
+
+.shared-workspace-root {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px 20px 64px 20px;
+  box-sizing: border-box;
+}
+
+/* 1. Header & Intro */
+.workspace-intro {
+  text-align: center;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-green, #176B50);
+  background-color: var(--light-green, #DCE9DF);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.intro-badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.workspace-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: clamp(24px, 3.8vw, 34px);
+  font-weight: 700;
+  color: var(--text-main, #202923);
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+
+.workspace-subtitle {
+  font-size: 14.5px;
+  color: var(--text-secondary, #737D75);
+  max-width: 600px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* Guest Upsell Strip */
+.guest-upsell-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary, #737D75);
+  margin-top: 4px;
+  max-width: 90%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.guest-upsell-strip .strip-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--primary-green, #176B50);
+  flex-shrink: 0;
+}
+
+.strip-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary-green, #176B50);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline;
+}
+
+.strip-link-btn:hover {
+  color: var(--primary-green-hover, #125740);
+}
+
+/* 2. Stepper Indicator */
+.workspace-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  padding: 8px 18px;
+  border-radius: 30px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  margin: 0 auto 32px auto;
+  max-width: fit-content;
+  flex-wrap: wrap;
+}
+
+.step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #737D75);
+  transition: all 0.18s ease;
+}
+
+.step-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #F0F2EE;
+  color: var(--text-secondary, #737D75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.step-icon-xs {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.5;
+}
+
+.step-item.active {
+  color: var(--primary-green, #176B50);
+  font-weight: 600;
+}
+
+.step-item.active .step-circle {
+  background-color: var(--primary-green, #176B50);
+  color: #FFFFFF;
+}
+
+.step-item.completed {
+  color: var(--text-main, #202923);
+}
+
+.step-item.completed .step-circle {
+  background-color: var(--light-green, #DCE9DF);
+  color: var(--primary-green, #176B50);
+}
+
+.step-divider {
+  width: 20px;
+  height: 1px;
+  background-color: #E5E8E1;
+}
+
+/* 3. Stage 1 & Card Layout */
+.workspace-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+/* 4. Stage 2: Two-Column Dynamic Workspace */
+.dynamic-workspace-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.workspace-left-column {
+  min-width: 0;
+}
+
+.workspace-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.editor-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E8E1;
+  flex-wrap: wrap;
+}
+
+.editor-back-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: transparent;
+  border: 1px solid #E5E8E1;
+  color: var(--text-secondary, #737D75);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all 0.18s ease;
+}
+
+.editor-back-upload-btn:hover {
+  background-color: #F0F2EE;
+  color: var(--text-main, #202923);
+}
+
+.editor-proceed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--primary-green, #176B50);
+  color: #FFFFFF;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 42px;
+  box-shadow: 0 2px 8px rgba(23, 107, 80, 0.2);
+  transition: all 0.18s ease;
+}
+
+.editor-proceed-btn:hover {
+  background-color: var(--primary-green-hover, #125740);
+  transform: translateY(-1px);
+}
+
+.nav-icon-xs {
+  width: 15px;
+  height: 15px;
+}
+
+.assistant-wrapper-block {
+  min-width: 0;
+}
+
+/* 5. Responsive Media Queries */
+@media (max-width: 1024px) {
+  .dynamic-workspace-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .shared-workspace-root {
+    padding: 20px 14px 48px 14px;
+  }
+
+  .workspace-card {
+    padding: 20px 16px;
+  }
+
+  .workspace-stepper {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .step-label {
+    display: none;
+  }
+
+  .step-divider {
+    width: 12px;
+  }
+
+  .editor-nav-bar {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .editor-back-upload-btn,
+  .editor-proceed-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

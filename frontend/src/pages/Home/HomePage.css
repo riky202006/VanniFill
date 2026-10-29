@@ -1,0 +1,12 @@
+/* ==========================================================================
+   VAANIFILL AI - SIGNED-IN HOME PAGE STYLES
+   ========================================================================== */
+
+.home-page-root {
+  width: 100%;
+  min-height: calc(100vh - 68px);
+  background-color: var(--bg-page, #F7F7F2);
+  color: var(--text-main, #202923);
+  display: flex;
+  flex-direction: column;
+}

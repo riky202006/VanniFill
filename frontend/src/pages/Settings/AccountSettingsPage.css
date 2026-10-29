@@ -1,0 +1,431 @@
+/* ==========================================================================
+   VAANIFILL AI - ACCOUNT SETTINGS PAGE STYLES
+   ========================================================================== */
+
+.account-settings-page-root {
+  width: 100%;
+  min-height: calc(100vh - 68px);
+  background-color: var(--bg-page, #F7F7F2);
+  color: var(--text-main, #202923);
+  padding: 32px 20px 80px 20px;
+  box-sizing: border-box;
+}
+
+.account-settings-container {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Page Header */
+.settings-header {
+  margin-bottom: 8px;
+}
+
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-green, #176B50);
+  background-color: var(--light-green, #DCE9DF);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.settings-badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.settings-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 800;
+  color: var(--text-main, #202923);
+  margin-bottom: 6px;
+}
+
+.settings-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary, #737D75);
+  margin: 0;
+}
+
+/* Settings Cards */
+.settings-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #F0F2EE;
+}
+
+.card-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--primary-green, #176B50);
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--text-main, #202923);
+  margin-bottom: 2px;
+}
+
+.card-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary, #737D75);
+  margin: 0;
+}
+
+.settings-card-body {
+  padding: 24px;
+}
+
+/* 1. Account Details Grid */
+.account-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #737D75);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.info-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main, #202923);
+}
+
+.info-value-badge {
+  display: inline-flex;
+  font-size: 12.5px;
+  font-weight: 600;
+  background-color: #F0F2EE;
+  color: var(--text-main, #202923);
+  padding: 4px 10px;
+  border-radius: 6px;
+  max-width: fit-content;
+}
+
+.info-value-badge.success {
+  background-color: #DCFCE7;
+  color: #166534;
+}
+
+/* 2. Language Selector */
+.language-selector-wrapper {
+  max-width: 480px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main, #202923);
+  margin-bottom: 8px;
+}
+
+.settings-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  color: var(--text-main, #202923);
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  border-radius: 8px;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--primary-green, #176B50);
+  box-shadow: 0 0 0 3px rgba(23, 107, 80, 0.12);
+}
+
+.field-help-text {
+  font-size: 12.5px;
+  color: var(--text-secondary, #737D75);
+  margin-top: 8px;
+  line-height: 1.45;
+}
+
+/* 3. Toggles & Actions */
+.setting-toggle-row,
+.setting-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.toggle-text,
+.action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 580px;
+}
+
+.toggle-title,
+.action-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-main, #202923);
+}
+
+.toggle-desc,
+.action-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary, #737D75);
+  line-height: 1.45;
+}
+
+.settings-divider {
+  height: 1px;
+  background-color: #F0F2EE;
+  margin: 20px 0;
+}
+
+/* Switch Toggle Component */
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #CBD5E1;
+  border-radius: 34px;
+  transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.switch-slider::before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+input:checked + .switch-slider {
+  background-color: var(--primary-green, #176B50);
+}
+
+input:checked + .switch-slider::before {
+  transform: translateX(22px);
+}
+
+/* Danger outline button */
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid #FCA5A5;
+  color: #DC2626;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.btn-danger-outline:hover {
+  background-color: #FEF2F2;
+}
+
+.notice-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.notice-strip.success {
+  background-color: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
+
+.notice-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* 4. Management Buttons */
+.manage-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-settings-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--primary-green, #176B50);
+  color: #FFFFFF;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 42px;
+  transition: background var(--transition-fast);
+}
+
+.btn-settings-primary:hover {
+  background-color: var(--primary-green-hover, #125740);
+}
+
+.btn-settings-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+  border: 1px solid #E5E8E1;
+  color: var(--text-main, #202923);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.btn-settings-secondary:hover {
+  background-color: #F9FAF8;
+  border-color: #D1D5DB;
+}
+
+/* 5. Logout Card */
+.logout-card {
+  border-color: #FEE2E2;
+}
+
+.logout-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.logout-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: #991B1B;
+  margin-bottom: 2px;
+}
+
+.logout-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #737D75);
+  margin: 0;
+}
+
+.btn-logout-prominent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #DC2626;
+  color: #FFFFFF;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 42px;
+  transition: background var(--transition-fast);
+}
+
+.btn-logout-prominent:hover {
+  background-color: #B91C1C;
+}
+
+.btn-icon-xs {
+  width: 15px;
+  height: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .account-settings-page-root {
+    padding: 20px 14px 60px 14px;
+  }
+
+  .account-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-toggle-row,
+  .setting-action-row,
+  .logout-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-logout-prominent {
+    width: 100%;
+    justify-content: center;
+  }
+}

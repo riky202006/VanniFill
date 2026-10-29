@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Sparkles, CheckCircle2, AlertCircle, Lock, Mail, User, LogIn, UserPlus } from 'lucide-react'
+import { X, CheckCircle2, AlertCircle, Lock, Mail, User, LogIn, UserPlus } from 'lucide-react'
 import { API_BASE_URL } from '../../constants/api'
 import './AuthModal.css'
 

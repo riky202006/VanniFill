@@ -1,10 +1,7 @@
 import React from 'react'
 import {
-  FileText,
   Edit2,
   AlertCircle,
-  CheckCircle2,
-  HelpCircle,
   ArrowLeft,
   ArrowRight,
   Info,
@@ -12,8 +9,6 @@ import {
 import './FormReview.css'
 
 export default function FormReview({
-  fileName,
-  formTitle,
   fields = [],
   fieldValues = {},
   fieldSources = {},
@@ -21,7 +16,6 @@ export default function FormReview({
   isFixture = false,
   onEditField,
   onBackToEditor,
-  onProceedToDownload,
 }) {
   const filledCount = fields.filter((f) => {
     const val = fieldValues[f.id] ?? f.userValue ?? f.detectedValue
@@ -88,6 +82,9 @@ export default function FormReview({
                     {field.required && <span className="req-marker">*</span>}
                   </span>
                   <div className="pill-tags-row">
+                    {source === 'saved_profile' && (
+                      <span className="source-tag tag-profile">Saved Profile</span>
+                    )}
                     {source === 'found_in_document' && (
                       <span className="source-tag tag-ocr">Found in document</span>
                     )}
