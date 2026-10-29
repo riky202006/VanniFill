@@ -16,7 +16,7 @@
   - `feat/frontend-guest-mode`
   - `feat/backend-gemini-ocr`
   - `feat/extension-autofill`
-  - `docs/api-specs`
+  - `feat/api-specs`
 
 ## Coordination Rules
 

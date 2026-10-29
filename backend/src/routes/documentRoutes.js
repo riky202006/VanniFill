@@ -1,6 +1,6 @@
 /**
  * Document Processing Routes (OCR & Multimodal Extraction)
- * Conforms to docs/api-contract.md and frontend documentAnalysisService.js
+ * Conforms to shared/api-contracts/form-api.json and frontend documentAnalysisService.js
  */
 
 import { Router } from 'express'

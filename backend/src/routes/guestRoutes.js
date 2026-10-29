@@ -1,6 +1,6 @@
 /**
  * Guest Session Routes
- * Initializes zero-login guest sessions conforming to docs/api-contract.md
+ * Initializes zero-login guest sessions conforming to shared/api-contracts/form-api.json
  */
 
 import { Router } from 'express'
