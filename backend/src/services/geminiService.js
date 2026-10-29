@@ -1,7 +1,7 @@
 /**
  * Gemini AI Extraction Service for VaaniFill AI
- * Uses Google Gemini 2.5 Flash to extract structured JSON from spoken audio transcripts or document OCR.
- * Includes deterministic mock fallback for offline hackathon testing.
+ * Uses Google Gemini 2.5 Flash for universal Zero-Shot Form Layout OCR and speech extraction.
+ * Supports any arbitrary form (government, healthcare, bank, passport, utility, etc.).
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -131,27 +131,34 @@ Output valid JSON only with keys matching field ids. Example:
 }
 
 /**
- * Multi-modal OCR extraction for image or PDF documents
+ * Universal Zero-Shot Multi-Modal Document OCR Extraction
+ * Handles ANY arbitrary form: PDF, PNG, JPG, JPEG, WEBP.
  */
 export async function extractFromDocument(buffer, mimeType, fileName = '') {
-  const lowerName = String(fileName).toLowerCase()
+  const cleanName = String(fileName || 'document.pdf').replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+  const formattedTitle = cleanName.charAt(0).toUpperCase() + cleanName.slice(1)
+  const lowerName = cleanName.toLowerCase()
+
+  // Baseline fallback fields in case of offline/network failure
   let detectedFormType = 'scholarship'
-  let formTitle = 'National Scholarship Portal Application'
-  let formDescription = 'Post-Matric & Merit Scholarship Scheme for Higher Education'
+  let fallbackTitle = formattedTitle.length > 3 ? formattedTitle : 'Citizen Application Form'
+  let fallbackDescription = 'Digital Form Application'
 
   if (lowerName.includes('ayushman') || lowerName.includes('hospital') || lowerName.includes('health') || lowerName.includes('opd') || lowerName.includes('patient')) {
     detectedFormType = 'healthcare'
-    formTitle = 'Ayushman Hospital Intake & OPD Form'
-    formDescription = 'Patient Clinical Intake and Emergency Contact Form'
+    fallbackTitle = 'Ayushman Hospital Intake & OPD Form'
+    fallbackDescription = 'Patient Clinical Intake and Emergency Contact Form'
   } else if (lowerName.includes('pension')) {
     detectedFormType = 'pension'
-    formTitle = 'National Senior Citizen Pension Scheme'
-    formDescription = 'Social Security Pension Application for Senior Citizens'
+    fallbackTitle = 'National Senior Citizen Pension Scheme'
+    fallbackDescription = 'Social Security Pension Application for Senior Citizens'
+  } else if (lowerName.includes('scholarship')) {
+    detectedFormType = 'scholarship'
+    fallbackTitle = 'National Scholarship Portal Application'
+    fallbackDescription = 'Post-Matric & Higher Education Merit Scholarship Scheme'
   }
 
   const baseSchema = getFormSchema(detectedFormType)
-
-  // Default rich field templates with bounding boxes for the frontend preview
   const defaultFields = baseSchema.fields.map((f, idx) => ({
     fieldKey: f.id,
     label: f.label,
@@ -166,10 +173,11 @@ export async function extractFromDocument(buffer, mimeType, fileName = '') {
     description: f.placeholder || f.label
   }))
 
+  // If no buffer or offline
   if (!genAI || !buffer) {
     return {
-      formTitle,
-      formDescription,
+      formTitle: fallbackTitle,
+      formDescription: fallbackDescription,
       pageCount: 1,
       detectedFields: defaultFields
     }
@@ -185,36 +193,60 @@ export async function extractFromDocument(buffer, mimeType, fileName = '') {
     })
 
     const prompt = `
-You are the Document OCR Engine for VAANIFILL AI.
-Analyze this uploaded form image or document. Identify the form title, form description, and all input fields.
-For any fields already filled or printed on the form, extract the detectedValue. If a field is blank, detectedValue is null and isMissing is true.
+You are the Universal Form Detection and Layout Engine for VAANIFILL AI.
+Analyze this uploaded document/form image or PDF. It can be ANY form from any institution (government scheme, medical intake, passport, driving license, bank application, tax form, admission, or utility bill).
 
-Return JSON in this EXACT structure:
+YOUR GOAL:
+1. Identify the official Form Title and Form Description from the document header.
+2. Detect EVERY fillable input field, blank line, text box, or question that requires user entry.
+3. For each field:
+   - fieldKey: Unique camelCase identifier (e.g. "applicantName", "meterNumber", "dateOfBirth", "bloodGroup", "bankAccount")
+   - label: The printed field label as shown on the document (preserve bilingual text like Hindi/English if present)
+   - type: "text" | "number" | "date" | "tel" | "email" | "select" | "textarea"
+   - required: true if mandatory or marked with (*), else false
+   - placeholder: Helpful prompt for the user
+   - detectedValue: If the document already has pre-printed or handwritten text filled into this field, transcribe it. If blank, set to null.
+   - isMissing: true if detectedValue is null, false if a value was found.
+   - confidence: Estimated confidence (0.85 to 0.99)
+   - pageNumber: Page number where field is located (default 1)
+   - boundingBox: Approximate percentage coordinates { "x": number, "y": number, "width": number, "height": number } (0 to 100)
+   - description: Short explanation of what this field is for
+
+Return valid JSON conforming to this schema:
 {
   "formTitle": "Official name of the form",
-  "formDescription": "Short description of purpose",
+  "formDescription": "Brief explanation of purpose",
   "pageCount": 1,
   "detectedFields": [
     {
-      "fieldKey": "field_identifier",
-      "label": "Field Label / Hindi Label if present",
-      "type": "text | number | email | tel | date | select",
+      "fieldKey": "...",
+      "label": "...",
+      "type": "text",
       "required": true,
-      "placeholder": "Placeholder text",
-      "detectedValue": "value if pre-printed or null",
-      "isMissing": false,
+      "placeholder": "...",
+      "detectedValue": null,
+      "isMissing": true,
       "confidence": 0.95,
       "pageNumber": 1,
-      "boundingBox": { "x": 10, "y": 20, "width": 40, "height": 6 },
-      "description": "Short field explanation"
+      "boundingBox": { "x": 12, "y": 20, "width": 40, "height": 6 },
+      "description": "..."
     }
   ]
 }
 `
+
+    // Determine normalized mimeType
+    let cleanMime = mimeType || 'application/pdf'
+    if (cleanMime.includes('octet-stream')) {
+      if (fileName.endsWith('.pdf')) cleanMime = 'application/pdf'
+      else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) cleanMime = 'image/jpeg'
+      else if (fileName.endsWith('.png')) cleanMime = 'image/png'
+    }
+
     const part = {
       inlineData: {
         data: buffer.toString('base64'),
-        mimeType: mimeType || 'image/png'
+        mimeType: cleanMime
       }
     }
 
@@ -222,16 +254,18 @@ Return JSON in this EXACT structure:
     const parsed = JSON.parse(response.response.text())
     
     return {
-      formTitle: parsed.formTitle || formTitle,
-      formDescription: parsed.formDescription || formDescription,
+      formTitle: parsed.formTitle || fallbackTitle,
+      formDescription: parsed.formDescription || fallbackDescription,
       pageCount: parsed.pageCount || 1,
-      detectedFields: parsed.detectedFields || defaultFields
+      detectedFields: (parsed.detectedFields && parsed.detectedFields.length > 0)
+        ? parsed.detectedFields
+        : defaultFields
     }
   } catch (err) {
-    console.warn('[GeminiService] Document vision OCR fallback:', err.message)
+    console.warn('[GeminiService] Universal vision OCR fallback:', err.message)
     return {
-      formTitle,
-      formDescription,
+      formTitle: fallbackTitle,
+      formDescription: fallbackDescription,
       pageCount: 1,
       detectedFields: defaultFields
     }
