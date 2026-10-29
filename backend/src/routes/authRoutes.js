@@ -1,28 +1,33 @@
 /**
  * Authentication and User Profile Routes
  * Conforms to frontend constants/api.js
+ * Supports both MongoDB Atlas persistence and zero-cost in-memory caching.
+ *
  * Endpoints:
  * - POST /api/auth/register
  * - POST /api/auth/login
  * - POST /api/auth/logout
  * - GET  /api/user/profile
+ * - PUT  /api/user/profile
  */
 
 import { Router } from 'express'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import User from '../models/User.js'
+import { isMongoConnected } from '../config/db.js'
 
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'vaanifill-jwt-secret-key-ctrl-freaks-2026'
 
-// In-memory user database
+// In-memory user database cache
 const users = new Map()
 
 // Seed a demonstration user for instant hackathon testing
 const demoPasswordHash = bcrypt.hashSync('password123', 8)
 const demoUserId = 'usr_ctrl_freaks_demo'
-users.set('demo@vaanifill.ai', {
+const demoUserObj = {
   id: demoUserId,
   name: 'Devansh Dausodia',
   email: 'demo@vaanifill.ai',
@@ -36,10 +41,29 @@ users.set('demo@vaanifill.ai', {
     category: 'OBC',
     state: 'Assam',
     postalCode: '781001',
-    annualIncome: '250000'
+    annualIncome: '250000',
   },
-  createdAt: new Date().toISOString()
-})
+  createdAt: new Date().toISOString(),
+}
+
+users.set('demo@vaanifill.ai', demoUserObj)
+
+/**
+ * Seed MongoDB with Demo User if connected
+ */
+export async function seedDemoUserInMongo() {
+  if (isMongoConnected()) {
+    try {
+      const exists = await User.findOne({ email: 'demo@vaanifill.ai' })
+      if (!exists) {
+        await User.create(demoUserObj)
+        console.log('🌱 [Database] Seeded demo user account in MongoDB Atlas.')
+      }
+    } catch (err) {
+      console.warn('[Database] Demo user seed notice:', err.message)
+    }
+  }
+}
 
 /**
  * Helper: Generate JWT token
@@ -60,7 +84,7 @@ export function requireAuth(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       error: 'Unauthorized',
-      message: 'Authentication token missing or invalid.'
+      message: 'Authentication token missing or invalid.',
     })
   }
 
@@ -69,12 +93,26 @@ export function requireAuth(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET)
     req.user = decoded
     next()
-  } catch (err) {
+  } catch {
     return res.status(401).json({
       error: 'Unauthorized',
-      message: 'Token expired or invalid.'
+      message: 'Token expired or invalid.',
     })
   }
+}
+
+/**
+ * Helper: Find user in Mongo or memory cache
+ */
+async function findUserByEmail(email) {
+  const lower = email.toLowerCase().trim()
+  if (isMongoConnected()) {
+    try {
+      const doc = await User.findOne({ email: lower })
+      if (doc) return doc
+    } catch {}
+  }
+  return users.get(lower) || null
 }
 
 /**
@@ -86,22 +124,23 @@ router.post('/register', async (req, res) => {
   if (!email || !password || !name) {
     return res.status(400).json({
       error: 'ValidationFailed',
-      message: 'Name, email, and password are required.'
+      message: 'Name, email, and password are required.',
     })
   }
 
   const lowerEmail = email.toLowerCase().trim()
-  if (users.has(lowerEmail)) {
+  const existing = await findUserByEmail(lowerEmail)
+  if (existing) {
     return res.status(409).json({
       error: 'Conflict',
-      message: 'An account with this email already exists.'
+      message: 'An account with this email already exists.',
     })
   }
 
   const passwordHash = await bcrypt.hash(password, 8)
   const userId = `usr_${crypto.randomBytes(4).toString('hex')}`
 
-  const newUser = {
+  const userData = {
     id: userId,
     name: name.trim(),
     email: lowerEmail,
@@ -110,23 +149,38 @@ router.post('/register', async (req, res) => {
       fullName: name.trim(),
       email: lowerEmail,
       mobile: null,
-      dob: null
+      dob: null,
+      gender: null,
+      category: null,
+      state: null,
+      postalCode: null,
+      annualIncome: null,
     },
-    createdAt: new Date().toISOString()
+    createdAt: new Date(),
   }
 
-  users.set(lowerEmail, newUser)
-  const token = createToken(newUser)
+  // Persist to MongoDB if active
+  if (isMongoConnected()) {
+    try {
+      await User.create(userData)
+    } catch (err) {
+      console.warn('[Database] Failed to persist user to MongoDB:', err.message)
+    }
+  }
+
+  // Always keep in memory cache for instant session lookup
+  users.set(lowerEmail, userData)
+  const token = createToken(userData)
 
   res.status(201).json({
     message: 'User registered successfully',
     token,
     user: {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      profile: newUser.profile
-    }
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      profile: userData.profile,
+    },
   })
 })
 
@@ -139,15 +193,15 @@ router.post('/login', async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({
       error: 'ValidationFailed',
-      message: 'Email and password are required.'
+      message: 'Email and password are required.',
     })
   }
 
-  const user = users.get(email.toLowerCase().trim())
+  const user = await findUserByEmail(email)
   if (!user) {
     return res.status(401).json({
       error: 'Unauthorized',
-      message: 'Invalid email or password.'
+      message: 'Invalid email or password.',
     })
   }
 
@@ -155,7 +209,7 @@ router.post('/login', async (req, res) => {
   if (!isValidPassword) {
     return res.status(401).json({
       error: 'Unauthorized',
-      message: 'Invalid email or password.'
+      message: 'Invalid email or password.',
     })
   }
 
@@ -168,8 +222,8 @@ router.post('/login', async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      profile: user.profile
-    }
+      profile: user.profile,
+    },
   })
 })
 
@@ -178,7 +232,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/logout', (req, res) => {
   res.status(200).json({
-    message: 'Logged out successfully'
+    message: 'Logged out successfully',
   })
 })
 
@@ -187,7 +241,7 @@ router.post('/logout', (req, res) => {
  */
 export const userRouter = Router()
 
-userRouter.get('/profile', (req, res) => {
+userRouter.get('/profile', async (req, res) => {
   const authHeader = req.headers.authorization
   let user = null
 
@@ -195,7 +249,7 @@ userRouter.get('/profile', (req, res) => {
     const token = authHeader.split(' ')[1]
     try {
       const decoded = jwt.verify(token, JWT_SECRET)
-      user = users.get(decoded.email)
+      user = await findUserByEmail(decoded.email)
     } catch {
       // ignore token decode errors and fall back
     }
@@ -203,38 +257,51 @@ userRouter.get('/profile', (req, res) => {
 
   // Fallback to demo user if testing without bearer token
   if (!user) {
-    user = users.get('demo@vaanifill.ai')
+    user = await findUserByEmail('demo@vaanifill.ai')
   }
 
   res.status(200).json({
     id: user.id,
     name: user.name,
     email: user.email,
-    profile: user.profile
+    profile: user.profile,
   })
 })
 
-userRouter.put('/profile', (req, res) => {
+userRouter.put('/profile', async (req, res) => {
   const authHeader = req.headers.authorization
-  let user = users.get('demo@vaanifill.ai')
+  let targetEmail = 'demo@vaanifill.ai'
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1]
     try {
       const decoded = jwt.verify(token, JWT_SECRET)
-      if (users.has(decoded.email)) {
-        user = users.get(decoded.email)
-      }
+      if (decoded.email) targetEmail = decoded.email
     } catch {}
   }
 
-  user.profile = { ...user.profile, ...(req.body || {}) }
+  let user = await findUserByEmail(targetEmail)
+  if (!user) {
+    user = users.get('demo@vaanifill.ai')
+  }
+
+  const updatedProfile = { ...user.profile, ...(req.body || {}) }
+
+  if (isMongoConnected()) {
+    try {
+      await User.updateOne({ email: targetEmail }, { $set: { profile: updatedProfile } })
+    } catch (err) {
+      console.warn('[Database] MongoDB profile update warning:', err.message)
+    }
+  }
+
+  user.profile = updatedProfile
+  users.set(targetEmail, user)
 
   res.status(200).json({
     message: 'Profile updated successfully',
-    profile: user.profile
+    profile: updatedProfile,
   })
 })
 
 export default router
-

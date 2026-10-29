@@ -10,6 +10,7 @@ import documentRoutes from './routes/documentRoutes.js'
 import formRoutes from './routes/formRoutes.js'
 import extractRoutes from './routes/extractRoutes.js'
 import authRoutes, { userRouter } from './routes/authRoutes.js'
+import { isMongoConnected } from './config/db.js'
 
 const app = express()
 
@@ -39,6 +40,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     service: 'vaanifill-backend',
+    database: isMongoConnected() ? 'MongoDB Atlas (Connected)' : 'In-Memory (Active)',
     timestamp: new Date().toISOString(),
   })
 })

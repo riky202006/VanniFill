@@ -1,0 +1,36 @@
+/**
+ * MongoDB Atlas Connection Configuration
+ * Connects to MongoDB Atlas if MONGODB_URI is provided in .env.
+ * Seamlessly falls back to in-memory mode if URI is absent or during offline testing.
+ */
+
+import mongoose from 'mongoose'
+
+let isConnected = false
+
+export async function connectDB() {
+  const uri = process.env.MONGODB_URI
+
+  if (!uri || uri.includes('your-mongodb-atlas-connection-string')) {
+    console.log('ℹ️  [Database] MONGODB_URI not configured. Running in high-performance in-memory mode.')
+    return false
+  }
+
+  try {
+    console.log('📡 [Database] Connecting to MongoDB Atlas...')
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+    })
+    isConnected = true
+    console.log(`✅ [Database] MongoDB Atlas Connected: ${conn.connection.host}`)
+    return true
+  } catch (err) {
+    console.warn(`⚠️  [Database] Could not connect to MongoDB Atlas (${err.message}). Falling back to in-memory mode.`)
+    isConnected = false
+    return false
+  }
+}
+
+export function isMongoConnected() {
+  return isConnected && mongoose.connection.readyState === 1
+}

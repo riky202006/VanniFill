@@ -1,6 +1,7 @@
 /**
  * Form Mapping, Validation & PDF Generation Routes
  * Conforms to docs/api-contract.md and frontend documentGenerationService.js
+ * Supports both MongoDB Atlas persistence and in-memory caching.
  */
 
 import { Router } from 'express'
@@ -8,6 +9,8 @@ import crypto from 'crypto'
 import PDFDocument from 'pdfkit'
 import { FORM_SCHEMAS, getFormSchema } from '../data/formSchemas.js'
 import { validateForm } from '../services/validationService.js'
+import Submission from '../models/Submission.js'
+import { isMongoConnected } from '../config/db.js'
 
 const router = Router()
 
@@ -38,7 +41,7 @@ router.get('/:id', (req, res) => {
 })
 
 // Match and validate fields
-router.post('/match', (req, res) => {
+router.post('/match', async (req, res) => {
   const {
     documentId = null,
     fieldValues = {},
@@ -60,6 +63,21 @@ router.post('/match', (req, res) => {
     submittedAt: new Date().toISOString(),
     summary: validation.summary,
     fields: validation.fields
+  }
+
+  // Persist to MongoDB if active
+  if (isMongoConnected()) {
+    try {
+      await Submission.create({
+        submissionId,
+        formId,
+        formTitle: schema.title,
+        fieldValues: combinedInputs,
+        status: submissionRecord.status
+      })
+    } catch (err) {
+      console.warn('[Database] Submission persist warning:', err.message)
+    }
   }
 
   submissions.set(submissionId, submissionRecord)
@@ -109,23 +127,18 @@ router.post('/generate', (req, res) => {
       .text(`Reference ID: VF-2026-${crypto.randomBytes(3).toString('hex').toUpperCase()}`, 55, bannerY + 16)
       .text(`Verified On: ${new Date().toLocaleString()} • Compliance: Zero-Hallucination Golden Rule`, 55, bannerY + 28)
 
-    doc.moveDown(2)
-
     // Form Fields Table
-    doc.fontSize(14).fillColor('#176B50').font('Helvetica-Bold').text('Verified Citizen Form Fields:')
+    doc.moveDown(2)
+    doc.fontSize(14).fillColor('#176B50').font('Helvetica-Bold').text('Verified Citizen Form Details', 40)
     doc.moveDown(0.5)
 
     const entries = Object.entries(fieldValues)
     if (entries.length === 0) {
-      doc.fontSize(10).fillColor('#737D75').font('Helvetica').text('No fields were entered for this application.')
+      doc.fontSize(10).fillColor('#737D75').font('Helvetica-Oblique').text('No filled field values provided.')
     } else {
       entries.forEach(([key, val], idx) => {
-        const readableLabel = key
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, str => str.toUpperCase())
-        const displayVal = (val !== null && val !== undefined && String(val).trim() !== '')
-          ? String(val).trim()
-          : '(Unfilled / Optional)'
+        const readableLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        const displayVal = val ? String(val) : '[Unfilled / Pending]'
 
         doc.fontSize(10).fillColor('#202923').font('Helvetica-Bold').text(`${idx + 1}. ${readableLabel}: `, { continued: true })
         doc.font('Helvetica').fillColor('#176B50').text(displayVal)
@@ -149,8 +162,24 @@ router.post('/generate', (req, res) => {
 })
 
 // Download/view submission receipt JSON
-router.get('/:submissionId/download', (req, res) => {
-  const record = submissions.get(req.params.submissionId)
+router.get('/:submissionId/download', async (req, res) => {
+  let record = submissions.get(req.params.submissionId)
+
+  if (!record && isMongoConnected()) {
+    try {
+      const doc = await Submission.findOne({ submissionId: req.params.submissionId })
+      if (doc) {
+        record = {
+          submissionId: doc.submissionId,
+          formId: doc.formId,
+          status: doc.status,
+          submittedAt: doc.createdAt,
+          fields: doc.fieldValues
+        }
+      }
+    } catch {}
+  }
+
   if (!record) {
     return res.status(404).json({ error: 'Submission not found' })
   }
