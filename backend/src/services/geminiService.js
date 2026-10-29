@@ -24,7 +24,7 @@ if (isRealApiKey) {
   genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 }
 
-const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite']
+const GEMINI_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.1-flash-lite']
 
 async function generateWithGemini(contents, timeoutMs = 8000) {
   if (!genAI) return null
