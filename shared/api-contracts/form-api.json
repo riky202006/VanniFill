@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "VaaniFill API Contract Spec",
   "description": "Standardized request and response structures agreed upon by Frontend, Backend, and Extension teams.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "endpoints": {
     "createGuestSession": {
       "method": "POST",
@@ -10,7 +10,7 @@
       "description": "Initialize a zero-login guest session",
       "request": {
         "body": {
-          "preferredLanguage": "string (e.g. 'en', 'hi', 'as')"
+          "preferredLanguage": "string (e.g. 'en', 'hi')"
         }
       },
       "response": {
@@ -22,11 +22,36 @@
         }
       }
     },
+    "extractVoice": {
+      "method": "POST",
+      "path": "/api/extract",
+      "description": "Universal voice speech extraction and conversational follow-up for Chrome extension and Web App",
+      "request": {
+        "body": {
+          "transcript": "string (spoken user transcript in Hindi, English, or Hinglish)",
+          "language": "string ('hi' or 'en')",
+          "fields": "array of { id, label, type, required } detected on the webpage DOM",
+          "current_values": "object containing previously extracted key-value pairs"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "isComplete": "boolean",
+          "values": "object with key-value pairs of extracted fields",
+          "missing_fields": "array of field IDs that are required but still unmentioned",
+          "validation_errors": "object of { [fieldId]: errorMessage } for format mistakes",
+          "follow_up_question": "string with natural next question in user language",
+          "reply": "string with assistant conversational response message"
+        }
+      }
+    },
     "uploadDocument": {
       "method": "POST",
       "path": "/api/documents/upload",
       "contentType": "multipart/form-data",
-      "description": "Upload a form image or PDF for OCR and entity extraction",
+      "description": "Upload any form image or PDF for zero-shot layout OCR and field detection",
       "request": {
         "formData": {
           "file": "binary (image/png, image/jpeg, application/pdf)",
@@ -36,28 +61,17 @@
       "response": {
         "status": 200,
         "body": {
+          "connected": true,
           "documentId": "uuid",
           "status": "PROCESSED",
+          "formTitle": "string",
+          "formDescription": "string",
           "detectedFields": [
             {
               "fieldKey": "fullName",
               "label": "Full Name",
-              "detectedValue": "Ramesh Sharma",
-              "confidence": 0.98,
-              "isMissing": false
-            },
-            {
-              "fieldKey": "age",
-              "label": "Age",
-              "detectedValue": "52",
-              "confidence": 0.95,
-              "isMissing": false
-            },
-            {
-              "fieldKey": "postalCode",
-              "label": "PIN Code",
               "detectedValue": null,
-              "confidence": 0.0,
+              "confidence": 0.98,
               "isMissing": true
             }
           ]
@@ -81,6 +95,22 @@
           "missingCount": 0,
           "readyForDownload": true
         }
+      }
+    },
+    "generatePdf": {
+      "method": "POST",
+      "path": "/api/forms/generate",
+      "description": "Generate an official stamped PDF application from confirmed field values",
+      "request": {
+        "body": {
+          "documentId": "string",
+          "formTitle": "string",
+          "fieldValues": "object containing key-value pairs"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/pdf"
       }
     }
   }

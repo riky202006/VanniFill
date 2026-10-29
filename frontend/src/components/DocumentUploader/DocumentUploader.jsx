@@ -197,8 +197,8 @@ export default function DocumentUploader({
       {/* Developer Testing Fixture Adapter */}
       <div className="developer-fixture-box">
         <div className="fixture-label-row">
-          <span className="fixture-badge">Frontend Testing Fixture</span>
-          <span className="fixture-hint">Test dynamic field generation without backend OCR:</span>
+          <span className="fixture-badge">Official Form Templates</span>
+          <span className="fixture-hint">Or choose a standard civic / health template to begin:</span>
         </div>
         <div className="fixture-options-row">
           {Object.entries(FIXTURES).map(([key, item]) => (

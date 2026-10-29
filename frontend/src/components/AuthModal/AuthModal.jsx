@@ -14,14 +14,6 @@ export default function AuthModal({ isOpen, initialMode = 'signin', onClose, onL
 
   if (!isOpen) return null
 
-  // Fast 1-click fill for hackathon judges and testers
-  const handleFillDemo = () => {
-    setMode('signin')
-    setEmail('demo@vaanifill.ai')
-    setPassword('password123')
-    setErrorMessage(null)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -98,14 +90,6 @@ export default function AuthModal({ isOpen, initialMode = 'signin', onClose, onL
 
         {/* Modal Body */}
         <div className="modal-body auth-body">
-          {/* 1-Click Demo Credentials Pill */}
-          <div className="demo-credentials-pill" onClick={handleFillDemo} title="Click to fill demo account details">
-            <Sparkles className="demo-pill-icon" />
-            <div className="demo-pill-text">
-              <strong>Quick Test:</strong> Click here to auto-fill demo credentials
-            </div>
-          </div>
-
           {errorMessage && (
             <div className="auth-alert error">
               <AlertCircle className="auth-alert-icon" />
@@ -195,3 +179,4 @@ export default function AuthModal({ isOpen, initialMode = 'signin', onClose, onL
     </div>
   )
 }
+

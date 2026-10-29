@@ -70,9 +70,9 @@ export default function DocumentProcessingStatus({
               <Sparkles className="sparkles-icon" />
             </div>
             <div className="fixture-prompt-text">
-              <strong>Test with a demonstration schema:</strong>
+              <strong>Select a standard government template:</strong>
               <p>
-                You can explore how VaaniFill dynamically builds the editor and voice assistant using an official test schema. Fields will be clearly labelled as demo data.
+                Choose an official pre-configured portal template to complete your application.
               </p>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function DocumentProcessingStatus({
               className="unconnected-fixture-btn"
               onClick={() => onProceedWithFixture('scholarship')}
             >
-              <span>Explore Demo Scholarship Form</span>
+              <span>National Scholarship Application</span>
               <ArrowRight className="action-btn-icon" />
             </button>
           </div>

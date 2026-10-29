@@ -64,16 +64,6 @@ export default function DetectedFieldsEditor({
         </div>
       </div>
 
-      {/* Honest Fixture Notice when running in demonstration mode */}
-      {isFixture && (
-        <div className="fixture-disclaimer-banner" role="status">
-          <Info className="disclaimer-icon-sm" aria-hidden="true" />
-          <span>
-            <strong>Demonstration Fixture:</strong> These fields are from a test schema to verify dynamic generation. They have not been extracted from your uploaded file.
-          </span>
-        </div>
-      )}
-
       {/* Dynamic Fields List */}
       <div className="dynamic-fields-stack">
         {fields.map((field) => {
