@@ -1,10 +1,11 @@
 /**
- * Form Mapping & Submission Routes
- * Conforms to docs/api-contract.md and shared/api-contracts/form-api.json
+ * Form Mapping, Validation & PDF Generation Routes
+ * Conforms to docs/api-contract.md and frontend documentGenerationService.js
  */
 
 import { Router } from 'express'
 import crypto from 'crypto'
+import PDFDocument from 'pdfkit'
 import { FORM_SCHEMAS, getFormSchema } from '../data/formSchemas.js'
 import { validateForm } from '../services/validationService.js'
 
@@ -74,7 +75,80 @@ router.post('/match', (req, res) => {
   })
 })
 
-// Download/view submission receipt
+/**
+ * PDF Document Generation Pipeline
+ * POST /api/forms/generate
+ * Responds with binary application/pdf stream
+ */
+router.post('/generate', (req, res) => {
+  const {
+    documentId = `DOC_${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+    fieldValues = {},
+    formTitle = 'Official Application Form',
+    originalFileName = 'form.pdf'
+  } = req.body || {}
+
+  try {
+    const doc = new PDFDocument({ margin: 40, size: 'A4' })
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="Completed_${originalFileName}"`)
+
+    doc.pipe(res)
+
+    // Header Branding
+    doc.fillColor('#176B50').fontSize(22).text('VAANIFILL AI', { align: 'center' })
+    doc.fillColor('#737D75').fontSize(11).text('Multilingual Form Assistance & Zero-Hallucination Verification', { align: 'center' })
+    doc.moveDown(1)
+
+    // Form Banner
+    doc.rect(40, doc.y, 515, 60).fillAndStroke('#F7F7F2', '#DCE9DF')
+    const bannerY = doc.y - 50
+    doc.fillColor('#202923').fontSize(12).font('Helvetica-Bold').text(`Application: ${formTitle}`, 55, bannerY)
+    doc.font('Helvetica').fontSize(9).fillColor('#737D75')
+      .text(`Reference ID: VF-2026-${crypto.randomBytes(3).toString('hex').toUpperCase()}`, 55, bannerY + 16)
+      .text(`Verified On: ${new Date().toLocaleString()} • Compliance: Zero-Hallucination Golden Rule`, 55, bannerY + 28)
+
+    doc.moveDown(2)
+
+    // Form Fields Table
+    doc.fontSize(14).fillColor('#176B50').font('Helvetica-Bold').text('Verified Citizen Form Fields:')
+    doc.moveDown(0.5)
+
+    const entries = Object.entries(fieldValues)
+    if (entries.length === 0) {
+      doc.fontSize(10).fillColor('#737D75').font('Helvetica').text('No fields were entered for this application.')
+    } else {
+      entries.forEach(([key, val], idx) => {
+        const readableLabel = key
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase())
+        const displayVal = (val !== null && val !== undefined && String(val).trim() !== '')
+          ? String(val).trim()
+          : '(Unfilled / Optional)'
+
+        doc.fontSize(10).fillColor('#202923').font('Helvetica-Bold').text(`${idx + 1}. ${readableLabel}: `, { continued: true })
+        doc.font('Helvetica').fillColor('#176B50').text(displayVal)
+      })
+    }
+
+    // Seal & Footer
+    doc.moveDown(3)
+    doc.rect(40, doc.y, 515, 45).fillAndStroke('#EBF3EE', '#176B50')
+    const footerY = doc.y - 35
+    doc.fontSize(9).fillColor('#176B50').font('Helvetica-Bold')
+      .text('OFFICIALLY STAMPED & VERIFIED BY HUMAN-IN-THE-LOOP ENGINE', 55, footerY, { align: 'center' })
+    doc.fontSize(8).fillColor('#737D75').font('Helvetica')
+      .text('Team Ctrl Freaks • ECCLESIA 4.0 (PS ECCLISIA26-001) • 100% Zero-Cost Architecture', 55, footerY + 14, { align: 'center' })
+
+    doc.end()
+  } catch (err) {
+    console.error('[FormGenerateError]:', err)
+    res.status(500).json({ error: 'Failed to generate PDF document.' })
+  }
+})
+
+// Download/view submission receipt JSON
 router.get('/:submissionId/download', (req, res) => {
   const record = submissions.get(req.params.submissionId)
   if (!record) {
@@ -88,4 +162,3 @@ router.get('/:submissionId/download', (req, res) => {
 })
 
 export default router
-

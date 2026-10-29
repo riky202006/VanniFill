@@ -9,6 +9,7 @@ import guestRoutes from './routes/guestRoutes.js'
 import documentRoutes from './routes/documentRoutes.js'
 import formRoutes from './routes/formRoutes.js'
 import extractRoutes from './routes/extractRoutes.js'
+import authRoutes, { userRouter } from './routes/authRoutes.js'
 
 const app = express()
 
@@ -47,15 +48,20 @@ app.get('/api', (req, res) => {
   res.json({
     name: 'VaaniFill AI API',
     version: '1.0.0',
-    description: 'Multilingual voice and document form assistance API',
+    description: 'Multilingual voice, OCR, and document form assistance API',
     endpoints: {
       health: 'GET /api/health',
       guestSession: 'POST /api/guest/session',
       documentsUpload: 'POST /api/documents/upload',
       forms: 'GET /api/forms',
       formMatch: 'POST /api/forms/match',
+      formGeneratePdf: 'POST /api/forms/generate',
       voiceExtract: 'POST /api/extract',
-      fieldValidate: 'POST /api/validate'
+      fieldValidate: 'POST /api/validate',
+      authRegister: 'POST /api/auth/register',
+      authLogin: 'POST /api/auth/login',
+      authLogout: 'POST /api/auth/logout',
+      userProfile: 'GET /api/user/profile'
     },
   })
 })
@@ -64,6 +70,8 @@ app.get('/api', (req, res) => {
 app.use('/api/guest', guestRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/forms', formRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/user', userRouter)
 app.use('/api', extractRoutes)
 
 // 404 Handler

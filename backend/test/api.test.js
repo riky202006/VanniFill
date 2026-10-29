@@ -1,6 +1,6 @@
 /**
  * VaaniFill AI Backend Automated Test Suite
- * Validates all endpoints, deterministic rules, and AI extraction contracts.
+ * Validates all endpoints, deterministic rules, document OCR, PDF generation, and Auth contracts.
  */
 
 import http from 'http'
@@ -12,32 +12,43 @@ let baseUrl
 function request(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, baseUrl)
+    const isBuffer = Buffer.isBuffer(body)
     const reqOptions = {
       method,
       hostname: url.hostname,
       port: url.port,
       path: url.pathname + url.search,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isBuffer ? {} : { 'Content-Type': 'application/json' }),
         ...headers
       }
     }
 
     const req = http.request(reqOptions, (res) => {
-      let data = ''
-      res.on('data', chunk => data += chunk)
+      const chunks = []
+      res.on('data', chunk => chunks.push(chunk))
       res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, data: JSON.parse(data) })
-        } catch {
-          resolve({ status: res.statusCode, data })
+        const raw = Buffer.concat(chunks)
+        const contentType = res.headers['content-type'] || ''
+        if (contentType.includes('application/json')) {
+          try {
+            resolve({ status: res.statusCode, headers: res.headers, data: JSON.parse(raw.toString()) })
+          } catch {
+            resolve({ status: res.statusCode, headers: res.headers, data: raw.toString() })
+          }
+        } else {
+          resolve({ status: res.statusCode, headers: res.headers, data: raw })
         }
       })
     })
 
     req.on('error', reject)
     if (body) {
-      req.write(JSON.stringify(body))
+      if (isBuffer) {
+        req.write(body)
+      } else {
+        req.write(JSON.stringify(body))
+      }
     }
     req.end()
   })
@@ -107,7 +118,7 @@ async function runTests() {
     const invalidPayload = {
       formId: 'scholarship',
       values: {
-        mobile: '12345', // invalid length & prefix
+        mobile: '12345',
         email: 'invalid-email-format'
       }
     }
@@ -136,6 +147,50 @@ async function runTests() {
     const resReceipt = await request('GET', resMatch.data.downloadUrl)
     assert(resReceipt.status === 200 && resReceipt.data.submissionId, 'GET /api/forms/:id/download retrieves official submission receipt')
 
+    // Test 9: Document Upload Handshake (Ayushman Healthcare detection)
+    const resDoc = await request('POST', '/api/documents/upload', {
+      fileName: 'Ayushman_OPD_Intake_Form.pdf'
+    })
+    assert(resDoc.status === 200 && resDoc.data.connected === true && resDoc.data.formTitle.includes('Ayushman'), 'POST /api/documents/upload detects Ayushman form and returns connected: true')
+    assert(Array.isArray(resDoc.data.detectedFields) && resDoc.data.detectedFields.length >= 5, 'Returns rich field schemas with bounding boxes for preview')
+
+    // Test 10: PDF Document Generation (POST /api/forms/generate)
+    const pdfPayload = {
+      documentId: 'DOC_TEST_123',
+      formTitle: 'National Scholarship Portal Application',
+      fieldValues: {
+        fullName: 'Rahul Verma',
+        annualIncome: '250000',
+        course: 'BCA'
+      }
+    }
+    const resPdf = await request('POST', '/api/forms/generate', pdfPayload)
+    assert(resPdf.status === 200 && resPdf.headers['content-type'].includes('application/pdf'), 'POST /api/forms/generate creates a valid stamped PDF stream')
+    assert(resPdf.data.length > 500, `PDF size is valid binary stream (${resPdf.data.length} bytes)`)
+
+    // Test 11: Auth Login (Demo User Seed)
+    const resLogin = await request('POST', '/api/auth/login', {
+      email: 'demo@vaanifill.ai',
+      password: 'password123'
+    })
+    assert(resLogin.status === 200 && resLogin.data.token && resLogin.data.user.email === 'demo@vaanifill.ai', 'POST /api/auth/login logs in demo user with JWT token')
+    const authToken = resLogin.data.token
+
+    // Test 12: User Profile Retrieval
+    const resProfile = await request('GET', '/api/user/profile', null, {
+      'Authorization': `Bearer ${authToken}`
+    })
+    assert(resProfile.status === 200 && resProfile.data.profile.fullName === 'Devansh Dausodia', 'GET /api/user/profile returns authenticated user profile with saved values')
+
+    // Test 13: User Registration
+    const newEmail = `user_${Date.now()}@test.com`
+    const resReg = await request('POST', '/api/auth/register', {
+      name: 'Riky Nayak',
+      email: newEmail,
+      password: 'mypassword123'
+    })
+    assert(resReg.status === 201 && resReg.data.token && resReg.data.user.name === 'Riky Nayak', 'POST /api/auth/register registers new user and issues JWT')
+
   } catch (err) {
     console.error('Fatal error during test run:', err)
     failed++
@@ -149,4 +204,3 @@ async function runTests() {
 }
 
 runTests()
-

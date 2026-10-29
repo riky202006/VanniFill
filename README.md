@@ -7,7 +7,7 @@
 [![AI Engine](https://img.shields.io/badge/Gemini-2.5_Flash-orange?style=for-the-badge&logo=google)](https://aistudio.google.com/)
 [![Frontend](https://img.shields.io/badge/React_19-Vite_%2B_Tailwind-61DAFB?style=for-the-badge&logo=react)](https://vitejs.dev/)
 [![Extension](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-yellow?style=for-the-badge&logo=googlechrome)](https://developer.chrome.com/docs/extensions/)
-[![Tests](https://img.shields.io/badge/Tests-13%2F13_Passing-brightgreen?style=for-the-badge)](https://github.com/riky202006/VanniFill)
+[![Tests](https://img.shields.io/badge/Tests-20%2F20_Passing-brightgreen?style=for-the-badge)](https://github.com/riky202006/VanniFill)
 [![License](https://img.shields.io/badge/Infrastructure_Cost-%240.00_(100%25_Free)-success?style=for-the-badge)]()
 
 ---
