@@ -1,21 +1,18 @@
 {
   "name": "vaanifill-backend",
   "version": "1.0.0",
-  "description": "Backend API server for VaaniFill AI (Node.js, Express, Prisma, PostgreSQL)",
+  "description": "Backend API server for VaaniFill AI (Node.js, Express)",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
     "test": "node test/api.test.js"
   },
   "keywords": [
     "vaanifill",
     "express",
-    "prisma",
+    "nodejs",
     "ai",
     "ocr",
     "form-automation"
@@ -24,7 +21,6 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -32,8 +28,5 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.5.0",
     "pdfkit": "^0.20.2"
-  },
-  "devDependencies": {
-    "prisma": "^5.22.0"
   }
 }

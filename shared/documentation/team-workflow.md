@@ -5,7 +5,7 @@
 | Member | Primary Focus | Primary Directory | Core Responsibilities |
 |---|---|---|---|
 | **Member 1** | Frontend & Guest Workflow | `frontend/src/pages/`, `frontend/src/components/`, `frontend/src/hooks/` | Welcome page, Guest mode, voice wizard UI, review form |
-| **Member 2** | Backend, Database & AI | `backend/src/`, `backend/prisma/` | Express REST API, PostgreSQL schema, Gemini API, OCR pipeline |
+| **Member 2** | Backend & AI | `backend/src/` | Express REST API, Gemini API, OCR pipeline |
 | **Member 3** | Chrome Extension | `extension/` | Manifest V3 background worker, content script form autofilling |
 | **Member 4** | Docs, Testing & QA | `docs/`, `shared/documentation/` | API validation, testing guide, architecture diagrams, demo deck |
 
