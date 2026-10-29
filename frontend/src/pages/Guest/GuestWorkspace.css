@@ -1,0 +1,546 @@
+/* ==========================================================================
+   VAANIFILL AI - DOCUMENT-DRIVEN GUEST WORKSPACE
+   ========================================================================== */
+
+.guest-workspace-root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-page, #F7F7F2);
+  color: var(--text-main, #202923);
+  font-family: var(--font-body, 'Inter', sans-serif);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------
+   1. NAVIGATION BAR
+   -------------------------------------------------------------------------- */
+.workspace-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color, #E5E8E1);
+  padding: 0 16px;
+}
+
+.navbar-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+}
+
+.brand-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #176B50;
+  box-shadow: 0 0 0 3px rgba(23, 107, 80, 0.16);
+}
+
+.brand-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #202923;
+}
+
+.brand-sub {
+  font-size: 10px;
+  font-weight: 700;
+  background-color: #DCE9DF;
+  color: #176B50;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #DCE9DF;
+  color: #176B50;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+.guest-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #176B50;
+}
+
+.nav-auth-btn {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 7px 14px;
+  min-height: 38px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.nav-signin-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #737D75;
+}
+
+.nav-signin-btn:hover {
+  color: #202923;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.nav-signup-btn {
+  background-color: transparent;
+  border: 1px solid #E5E8E1;
+  color: #202923;
+}
+
+.nav-signup-btn:hover {
+  background-color: #FFFFFF;
+  border-color: #176B50;
+  color: #176B50;
+}
+
+/* --------------------------------------------------------------------------
+   2. MAIN WORKSPACE CONTAINER & STEPPER
+   -------------------------------------------------------------------------- */
+.workspace-main {
+  flex: 1;
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 20px 64px 20px;
+  box-sizing: border-box;
+}
+
+.workspace-intro {
+  text-align: center;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #176B50;
+  background-color: #DCE9DF;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.intro-badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.intro-heading {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: clamp(24px, 3.8vw, 34px);
+  font-weight: 700;
+  color: #202923;
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+
+.intro-subtext {
+  font-size: 14.5px;
+  color: #737D75;
+  max-width: 580px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Stepper Indicator */
+.step-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  padding: 8px 16px;
+  border-radius: 30px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  flex-wrap: wrap;
+}
+
+.step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: #737D75;
+  transition: all 0.18s ease;
+}
+
+.step-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.step-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #F0F2EE;
+  color: #737D75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.step-check {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.5;
+}
+
+.step-active {
+  color: #176B50;
+  font-weight: 600;
+}
+
+.step-active .step-number {
+  background-color: #176B50;
+  color: #FFFFFF;
+}
+
+.step-completed {
+  color: #202923;
+}
+
+.step-completed .step-number {
+  background-color: #DCE9DF;
+  color: #176B50;
+}
+
+.step-connector {
+  width: 20px;
+  height: 1px;
+  background-color: #E5E8E1;
+}
+
+/* --------------------------------------------------------------------------
+   3. STAGE 2: DYNAMIC TWO-COLUMN WORKSPACE
+   -------------------------------------------------------------------------- */
+.dynamic-workspace-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.workspace-left-column {
+  min-width: 0;
+}
+
+.workspace-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* Card Wrapper */
+.workspace-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E8E1;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.editor-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E8E1;
+  flex-wrap: wrap;
+}
+
+.editor-back-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #202923;
+  border: 1px solid #E5E8E1;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  transition: all 0.18s ease;
+}
+
+.editor-back-upload-btn:hover {
+  background-color: #FAFAF7;
+}
+
+.editor-proceed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #176B50;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  transition: all 0.18s ease;
+}
+
+.editor-proceed-btn:hover {
+  background-color: #125740;
+}
+
+.nav-icon-xs {
+  width: 16px;
+  height: 16px;
+}
+
+/* Assistant Wrapper */
+.assistant-wrapper-block {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   4. MODAL STYLES (Placeholder Auth)
+   -------------------------------------------------------------------------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(32, 41, 35, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal-dialog {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #E5E8E1;
+}
+
+.modal-title {
+  font-family: var(--font-heading, 'Manrope', sans-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: #202923;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #737D75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.modal-close-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-body {
+  padding: 20px 22px;
+}
+
+.modal-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #202923;
+  margin-bottom: 16px;
+}
+
+.modal-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: #F2F8F5;
+  border: 1px solid #DCE9DF;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #176B50;
+  line-height: 1.4;
+}
+
+.modal-info-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.modal-footer {
+  padding: 14px 22px;
+  background-color: #FAFAF7;
+  border-top: 1px solid #E5E8E1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-dismiss-btn {
+  width: 100%;
+  background-color: #176B50;
+  color: #FFFFFF;
+  border: none;
+  padding: 11px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   5. RESPONSIVE MEDIA QUERIES (320px, 375px, 430px, 768px, 1024px, 1440px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  .dynamic-workspace-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .workspace-main {
+    padding: 20px 14px 48px 14px;
+  }
+
+  .workspace-card {
+    padding: 20px 16px;
+  }
+
+  .editor-nav-bar {
+    flex-direction: column;
+  }
+
+  .editor-nav-bar button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .workspace-navbar {
+    padding: 0 10px;
+  }
+
+  .navbar-container {
+    height: 54px;
+  }
+
+  .brand-title {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+  }
+
+  .guest-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .nav-auth-btn {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  .step-stepper {
+    width: 100%;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .step-item {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .step-connector {
+    width: 8px;
+  }
+}
+
+@media (max-width: 340px) {
+  .nav-signup-btn {
+    display: none;
+  }
+
+  .step-label {
+    display: none;
+  }
+
+  .step-item {
+    padding: 4px;
+  }
+}
